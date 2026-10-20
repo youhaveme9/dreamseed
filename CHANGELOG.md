@@ -33,3 +33,4 @@ First public release, 20 October 2026.
 6. Native inspection accepts all ten structure types advertised by the MCP schema.
 7. Installed Python packages can discover the native executable through PATH.
 8. Job manager shutdown stops an active Minecraft verification process and prevents subsequent verifier launches.
+9. The C++20 integration isolates Cubiomes interpolation helpers from the GCC math header.

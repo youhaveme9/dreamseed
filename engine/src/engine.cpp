@@ -1,4 +1,5 @@
 #include "dreamseed/engine.hpp"
+#include "cubiomes_compat.hpp"
 
 #include <algorithm>
 #include <array>
@@ -15,12 +16,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-extern "C" {
-#include "finders.h"
-#include "generator.h"
-#include "util.h"
-}
 
 namespace dreamseed {
 namespace {
