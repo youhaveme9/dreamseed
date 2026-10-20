@@ -12,3 +12,8 @@ its upstream release.
 The Python environment installs the official MCP SDK 2.2.0 and Pydantic
 2.12.5. Both are distributed under the MIT License, and their license files
 are installed with their Python packages.
+
+Minecraft server software is not included in DreamSeed distributions. The
+optional setup command downloads the pinned Java 1.21.1 server directly from
+Mojang after explicit user acceptance. Its use is governed by the Minecraft
+EULA at https://www.minecraft.net/en-us/eula.

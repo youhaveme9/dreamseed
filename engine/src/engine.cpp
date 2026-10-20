@@ -33,6 +33,8 @@ struct VersionSpec {
 constexpr VersionSpec kTargetVersion{"1.21.1", MC_1_21_1};
 constexpr int kCoordinateLimit = 30000000;
 constexpr uint64_t kMaxRelationGridPointsAcrossWorkers = 4000000;
+constexpr int64_t kMaxInspectionSamplePoints = 200000;
+constexpr int64_t kMaxBiomeMapPoints = 100000;
 
 struct Point {
     int x;
@@ -205,8 +207,8 @@ Json structureNames() {
 
 std::string structureStatus(const StructureSpec& spec) {
     return spec.terrain_limited
-        ? "placement_biome_and_terrain_heuristic_confirmed_exact_terrain_unconfirmed"
-        : "placement_and_cubiomes_viability_confirmed";
+        ? "cubiomes_placement_biome_and_terrain_heuristic_predicted"
+        : "cubiomes_placement_and_biome_viability_predicted";
 }
 
 int floorDiv(int value, int divisor) {
@@ -218,6 +220,13 @@ int floorDiv(int value, int divisor) {
 
 double distance(int x1, int z1, int x2, int z2) {
     return std::hypot(static_cast<double>(x1) - x2, static_cast<double>(z1) - z2);
+}
+
+void validateAreaBounds(Point center, int radius, const std::string& path) {
+    if (center.x - radius < -kCoordinateLimit || center.x + radius > kCoordinateLimit ||
+        center.z - radius < -kCoordinateLimit || center.z + radius > kCoordinateLimit) {
+        throw EngineError("out_of_range", path, "area extends beyond the supported coordinate range");
+    }
 }
 
 uint64_t pointKey(int x, int z) {
@@ -334,9 +343,11 @@ Json normalizeSearch(const Json& input) {
             const Point anchor = point(raw.value("anchor", Json(nullptr)), path + "/anchor", reference);
             const int step = integer(raw, "sample_step", 4, 64, path, 16);
             if (step % 4 != 0) throw EngineError("invalid_value", path + "/sample_step", "sample_step must be a multiple of 4");
+            const int radius = integer(raw, "radius", 0, 1024, path, 0, true);
+            validateAreaBounds(anchor, radius, path + "/radius");
             item["biome"] = biome;
             item["anchor"] = coordinate(anchor.x, anchor.z);
-            item["radius"] = integer(raw, "radius", 0, 1024, path, 0, true);
+            item["radius"] = radius;
             item["y"] = integer(raw, "y", -64, 320, path, 64);
             item["sample_step"] = step;
             kinds[id] = "feature";
@@ -345,9 +356,11 @@ Json normalizeSearch(const Json& input) {
             const auto structure = textField(raw, "structure", path);
             if (structureId(structure) < 0) throw EngineError("unsupported_structure", path + "/structure", "structure is not supported");
             const Point anchor = point(raw.value("anchor", Json(nullptr)), path + "/anchor", reference);
+            const int radius = integer(raw, "radius", 0, 10000, path, 0, true);
+            validateAreaBounds(anchor, radius, path + "/radius");
             item["structure"] = structure;
             item["anchor"] = coordinate(anchor.x, anchor.z);
-            item["radius"] = integer(raw, "radius", 0, 10000, path, 0, true);
+            item["radius"] = radius;
             item["count"] = integer(raw, "count", 1, 16, path, 1);
             kinds[id] = "feature";
         } else if (type == "max_distance") {
@@ -476,7 +489,7 @@ std::vector<Feature> findBiomeWithin(const Json& constraint, Generator& generato
             if (matching_positions) matching_positions->push_back({x, z});
             if (!found || d < best.distance) {
                 best = {constraint["id"], "biome", constraint["biome"], x, y, z, d,
-                        "confirmed_at_sample_coordinate"};
+                        "cubiomes_biome_at_sample_coordinate"};
                 found = true;
             }
         }
@@ -484,7 +497,7 @@ std::vector<Feature> findBiomeWithin(const Json& constraint, Generator& generato
     if (radius % step != 0 && getBiomeAt(&generator, 1, anchor.x, y, anchor.z) == target) {
         if (matching_positions) matching_positions->push_back({anchor.x, anchor.z});
         best = {constraint["id"], "biome", constraint["biome"], anchor.x, y, anchor.z, 0,
-                "confirmed_at_sample_coordinate"};
+                "cubiomes_biome_at_sample_coordinate"};
         found = true;
     }
     return found ? std::vector<Feature>{best} : std::vector<Feature>{};
@@ -548,7 +561,7 @@ Json evaluateSeed(const Json& request, uint64_t seed, const std::atomic_bool* ca
             const int y = constraint["y"];
             if (getBiomeAt(&generator, 1, x, y, z) != biomeId(constraint["biome"])) return {{"matched", false}};
             features[id].push_back({id, "biome", constraint["biome"], x, y, z, 0,
-                                    "confirmed_at_exact_coordinate"});
+                                    "cubiomes_biome_at_exact_coordinate"});
             if (relation_features.contains(id)) relation_points[id].push_back({x, z});
             satisfied.insert(id);
         } else if (type == "structure_within") {
@@ -643,9 +656,10 @@ Json evaluateSeed(const Json& request, uint64_t seed, const std::atomic_bool* ca
         }
     }
     Json caveats = Json::array();
+    caveats.push_back("Cubiomes structure coordinates are predicted generation attempts, not generated block confirmations. Use official Minecraft verification before relying on them in game.");
     for (const auto& name : terrain_limited_structures) {
-        caveats.push_back("Exact terrain generation is not confirmed for " + name +
-                          "; Cubiomes placement, biome viability, and the terrain heuristic passed.");
+        caveats.push_back("Cubiomes terrain screening passed for " + name +
+                          ", but exact terrain generation remains unconfirmed.");
     }
     if (sampled_biome) {
         caveats.push_back("Biome radius constraints inspect a deterministic grid. A match is exact at its reported coordinate, but the grid can miss biomes between samples.");
@@ -668,7 +682,7 @@ Json evaluateSeed(const Json& request, uint64_t seed, const std::atomic_bool* ca
             {"spatial_checks", std::move(spatial_checks)},
             {"soft_preference_score", score},
             {"score_breakdown", std::move(breakdown)},
-            {"validation_status", terrain_limited_structures.empty() ? "verified_by_supported_cubiomes_checks" : "verified_with_documented_terrain_caveat"},
+            {"validation_status", terrain_limited_structures.empty() ? "cubiomes_predicted" : "cubiomes_predicted_with_terrain_caveat"},
             {"caveats", std::move(caveats)}
         }}
     };
@@ -683,7 +697,7 @@ bool betterResult(const Json& left, const Json& right) {
 
 Json normalizeInspect(const Json& input) {
     if (!input.is_object()) throw EngineError("invalid_type", "/", "inspect request must be an object");
-    rejectUnknown(input, {"minecraft_version", "seed", "area", "structures"}, "");
+    rejectUnknown(input, {"minecraft_version", "seed", "area", "structures", "include_biome_map"}, "");
     const auto version = textField(input, "minecraft_version", "/");
     if (version != kTargetVersion.name) throw EngineError("unsupported_version", "/minecraft_version", "only Minecraft Java 1.21.1 is supported");
     if (!input.contains("seed") || !input["seed"].is_string()) {
@@ -695,14 +709,26 @@ Json normalizeInspect(const Json& input) {
     rejectUnknown(raw_area, {"center", "radius", "sample_step", "y"}, "/area");
     const Point center = point(raw_area.value("center", Json(nullptr)), "/area/center", {0, 0});
     const int radius = integer(raw_area, "radius", 0, 2048, "/area", 512);
+    validateAreaBounds(center, radius, "/area/radius");
     const int step = integer(raw_area, "sample_step", 4, 128, "/area", 16);
     if (step % 4 != 0) throw EngineError("invalid_value", "/area/sample_step", "sample_step must be a multiple of 4");
     const int width = radius * 2 / step + 1;
-    if (static_cast<int64_t>(width) * width > 200000) {
+    const int64_t grid_points = static_cast<int64_t>(width) * width;
+    if (grid_points > kMaxInspectionSamplePoints) {
         throw EngineError("resource_limit", "/area", "area sampling would exceed 200000 points");
     }
+    bool include_biome_map = false;
+    if (input.contains("include_biome_map")) {
+        if (!input["include_biome_map"].is_boolean()) {
+            throw EngineError("invalid_type", "/include_biome_map", "expected a boolean");
+        }
+        include_biome_map = input["include_biome_map"];
+    }
+    if (include_biome_map && grid_points > kMaxBiomeMapPoints) {
+        throw EngineError("resource_limit", "/area", "biome map output would exceed 100000 points");
+    }
     Json structures = input.value("structures", Json::array({"village", "desert_pyramid"}));
-    if (!structures.is_array() || structures.size() > 2) {
+    if (!structures.is_array() || structures.size() > kStructures.size()) {
         throw EngineError("invalid_type", "/structures", "structures must be an array of supported names");
     }
     for (size_t i = 0; i < structures.size(); ++i) {
@@ -713,7 +739,7 @@ Json normalizeInspect(const Json& input) {
     return {{"minecraft_version", version}, {"seed", input["seed"]},
             {"area", {{"center", coordinate(center.x, center.z)}, {"radius", radius},
                       {"sample_step", step}, {"y", integer(raw_area, "y", -64, 320, "/area", 64)}}},
-            {"structures", structures}};
+            {"structures", structures}, {"include_biome_map", include_biome_map}};
 }
 
 }
@@ -744,11 +770,11 @@ std::string Engine::formatSeed(uint64_t value) {
 Json Engine::capabilities() {
     return {
         {"engine", "DreamSeed"},
-        {"engine_version", "0.1.0"},
+        {"engine_version", DREAMSEED_VERSION},
         {"editions", Json::array({"Java"})},
         {"minecraft_versions", Json::array({kTargetVersion.name})},
         {"seed_encoding", "signed_64_bit_decimal_string"},
-        {"structure_seed_semantics", "Placement filtering uses the lower 48 bits, then the complete 64 bit world seed is verified and returned."},
+        {"structure_seed_semantics", "Placement filtering uses the lower 48 bits, then Cubiomes evaluates and returns the complete 64 bit world seed."},
         {"biome_filters", {
             {"types", Json::array({"biome_at", "biome_within"})},
             {"biomes", biomeNames()},
@@ -767,17 +793,23 @@ Json Engine::capabilities() {
             {"max_coordinate_absolute", kCoordinateLimit},
             {"max_relation_grid_points_across_workers", kMaxRelationGridPointsAcrossWorkers}
         }},
+        {"inspection", {
+            {"max_radius", 2048},
+            {"max_summary_sample_points", kMaxInspectionSamplePoints},
+            {"max_biome_map_points", kMaxBiomeMapPoints},
+            {"biome_map_encoding", "palette_indices"}
+        }},
         {"validation", {
-            {"village", "structure placement and biome viability"},
-            {"desert_pyramid", "placement, biome viability, and terrain heuristic; exact terrain unconfirmed"},
-            {"jungle_temple", "placement, biome viability, and terrain heuristic; exact terrain unconfirmed"},
-            {"swamp_hut", "structure placement and biome viability"},
-            {"igloo", "structure placement and biome viability"},
-            {"ocean_ruin", "structure placement and biome viability"},
-            {"shipwreck", "structure placement and biome viability"},
-            {"ocean_monument", "structure placement and monument biome viability"},
-            {"woodland_mansion", "placement, biome viability, and terrain heuristic; exact terrain unconfirmed"},
-            {"pillager_outpost", "structure placement, biome viability, and village exclusion"},
+            {"village", "Cubiomes structure placement and biome viability prediction"},
+            {"desert_pyramid", "Cubiomes placement, biome viability, and terrain heuristic prediction; exact terrain unconfirmed"},
+            {"jungle_temple", "Cubiomes placement, biome viability, and terrain heuristic prediction; exact terrain unconfirmed"},
+            {"swamp_hut", "Cubiomes structure placement and biome viability prediction"},
+            {"igloo", "Cubiomes structure placement and biome viability prediction"},
+            {"ocean_ruin", "Cubiomes structure placement and biome viability prediction"},
+            {"shipwreck", "Cubiomes structure placement and biome viability prediction"},
+            {"ocean_monument", "Cubiomes structure placement and monument biome viability prediction"},
+            {"woodland_mansion", "Cubiomes placement, biome viability, and terrain heuristic prediction; exact terrain unconfirmed"},
+            {"pillager_outpost", "Cubiomes structure placement, biome viability, and village exclusion prediction"},
             {"biome_at", "exact Cubiomes lookup at the reported block coordinate"},
             {"biome_within", "exact lookups at deterministic sampled coordinates"}
         }},
@@ -929,7 +961,9 @@ Json Engine::inspect(const Json& raw_request) {
                           {"nearest_distance", distance(data.second.x, data.second.z, center.x, center.z)}});
     }
     Json structures = Json::array();
-    Json caveats = Json::array();
+    Json caveats = Json::array({
+        "Cubiomes structure coordinates are predicted generation attempts, not generated block confirmations. Use official Minecraft verification before relying on them in game."
+    });
     std::set<std::string> terrain_limited_structures;
     for (const auto& name_json : request["structures"]) {
         const auto name = name_json.get<std::string>();
@@ -945,17 +979,55 @@ Json Engine::inspect(const Json& raw_request) {
         }
     }
     for (const auto& name : terrain_limited_structures) {
-        caveats.push_back("Exact terrain generation is not confirmed for " + name +
-                          "; Cubiomes placement, biome viability, and the terrain heuristic passed.");
+        caveats.push_back("Cubiomes terrain screening passed for " + name +
+                          ", but exact terrain generation remains unconfirmed.");
     }
     const int center_id = getBiomeAt(&generator, 1, center.x, y, center.z);
-    return {
+    Json response = {
         {"seed", formatSeed(seed)}, {"minecraft_version", kTargetVersion.name}, {"edition", "Java"},
         {"area", request["area"]}, {"center_biome", biome2str(kTargetVersion.cubiomes_id, center_id)},
         {"biome_sampling", {{"sample_count", samples}, {"sample_step", step}, {"y", y},
                             {"semantics", "exact Cubiomes lookups on a deterministic horizontal grid"}}},
         {"biome_summary", biomes}, {"structures", structures}, {"caveats", caveats}
     };
+    if (request["include_biome_map"].get<bool>()) {
+        const int origin_x = center.x - radius;
+        const int origin_z = center.z - radius;
+        std::vector<std::vector<std::string>> names;
+        std::set<std::string> unique_names;
+        for (int z = origin_z; z <= center.z + radius; z += step) {
+            std::vector<std::string> row;
+            for (int x = origin_x; x <= center.x + radius; x += step) {
+                const int id = getBiomeAt(&generator, 1, x, y, z);
+                const char* raw_name = biome2str(kTargetVersion.cubiomes_id, id);
+                std::string name = raw_name ? raw_name : "unknown";
+                unique_names.insert(name);
+                row.push_back(std::move(name));
+            }
+            names.push_back(std::move(row));
+        }
+        const std::vector<std::string> palette(unique_names.begin(), unique_names.end());
+        std::unordered_map<std::string, size_t> indices;
+        for (size_t i = 0; i < palette.size(); ++i) indices.emplace(palette[i], i);
+        Json rows = Json::array();
+        for (const auto& source_row : names) {
+            Json row = Json::array();
+            for (const auto& name : source_row) row.push_back(indices.at(name));
+            rows.push_back(std::move(row));
+        }
+        response["biome_map"] = {
+            {"encoding", "palette_indices"},
+            {"origin", coordinate(origin_x, origin_z)},
+            {"width", names.empty() ? 0 : names.front().size()},
+            {"height", names.size()},
+            {"sample_step", step},
+            {"y", y},
+            {"palette", palette},
+            {"rows", std::move(rows)},
+            {"semantics", "exact Cubiomes samples on a square grid; rows increase Z and columns increase X"}
+        };
+    }
+    return response;
 }
 
 Json Engine::compare(const Json& input) {

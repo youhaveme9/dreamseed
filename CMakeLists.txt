@@ -57,6 +57,7 @@ target_link_libraries(cubiomes PUBLIC m)
 
 find_package(Threads REQUIRED)
 add_library(dreamseed_engine STATIC engine/src/engine.cpp)
+target_compile_definitions(dreamseed_engine PRIVATE DREAMSEED_VERSION="${PROJECT_VERSION}")
 target_include_directories(dreamseed_engine PUBLIC engine/include)
 dreamseed_set_warnings(dreamseed_engine)
 target_link_libraries(dreamseed_engine PUBLIC cubiomes nlohmann_json::nlohmann_json Threads::Threads)

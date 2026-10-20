@@ -68,7 +68,7 @@ The engine performs exact biome lookups at grid coordinates inside the circle. A
 
 Supported structure names are `village`, `desert_pyramid`, `jungle_temple`, `swamp_hut`, `igloo`, `ocean_ruin`, `shipwreck`, `ocean_monument`, `woodland_mansion`, and `pillager_outpost`.
 
-Desert pyramids, jungle temples, and woodland mansions use Cubiomes terrain screening but still carry an exact terrain caveat. Other structures use their Cubiomes placement and structure specific viability checks. Coordinates are generation attempt positions rather than block accurate entrances.
+Desert pyramids, jungle temples, and woodland mansions use Cubiomes terrain screening but still carry an exact terrain caveat. Other structures use their Cubiomes placement and structure specific viability checks. All search structure coordinates are predictions at generation attempt positions rather than block accurate entrances. Use `verify_seed_with_minecraft` for an official Minecraft locate check on supported targets.
 
 ## Distance between features
 
@@ -103,3 +103,26 @@ For a radius constraint, closeness is `1 minus distance divided by radius`, clam
 ## Errors
 
 Validation errors contain `code`, `path`, and `message`. Unsupported requirements use explicit codes such as `unsupported_version`, `unsupported_condition`, `unsupported_biome`, or `unsupported_structure`.
+
+## Structured biome map inspection
+
+Set `include_biome_map` on an inspection request:
+
+```json
+{
+  "minecraft_version": "1.21.1",
+  "seed": "7810500614729040739",
+  "area": {
+    "center": {"x": 0, "z": 0},
+    "radius": 64,
+    "sample_step": 16,
+    "y": 64
+  },
+  "structures": ["village", "pillager_outpost"],
+  "include_biome_map": true
+}
+```
+
+The result contains a square grid with an origin, dimensions, sample step, Y level, alphabetic biome palette, and rows of palette indices. Rows increase Z and columns increase X. Every cell is an exact Cubiomes lookup at its grid coordinate. The output is limited to 100,000 cells.
+
+The biome summary continues to use samples inside the circular inspection radius. The structured map covers the square bounding area so clients can render it without inferring missing cells.

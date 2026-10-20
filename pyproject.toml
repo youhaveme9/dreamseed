@@ -9,6 +9,7 @@ description = "Local MCP server for deterministic Minecraft seed search"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 authors = [{name = "DreamSeed contributors"}]
 keywords = ["minecraft", "cubiomes", "mcp", "seed search"]
 classifiers = [
@@ -23,8 +24,20 @@ dependencies = [
   "pydantic==2.12.5"
 ]
 
+[project.urls]
+Homepage = "https://github.com/youhaveme9/dreamseed"
+Repository = "https://github.com/youhaveme9/dreamseed"
+Documentation = "https://github.com/youhaveme9/dreamseed#readme"
+Issues = "https://github.com/youhaveme9/dreamseed/issues"
+Changelog = "https://github.com/youhaveme9/dreamseed/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+dev = ["build==1.3.0"]
+
 [project.scripts]
 dreamseed-mcp = "dreamseed_mcp.server:main"
+dreamseed-doctor = "dreamseed_mcp.doctor:main"
+dreamseed-minecraft-setup = "dreamseed_mcp.minecraft_setup:main"
 
 [tool.setuptools.packages.find]
 include = ["dreamseed_mcp*"]

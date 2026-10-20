@@ -1,0 +1,21 @@
+include CMakeLists.txt Makefile requirements.txt
+include README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md LICENSE THIRD_PARTY_NOTICES.md
+include MANIFEST.in .mcp.json .gitignore
+recursive-include .claude-plugin *.json
+recursive-include .github *.yml *.md
+graft cli
+graft docs
+graft dreamseed_mcp
+graft engine
+graft examples
+graft mcp
+graft scripts
+graft skills
+graft third_party
+recursive-include tests *.py
+global-exclude *.py[cod] .DS_Store *.jar .env .env.* *.pem *.key *.p12 eula.txt mojang_eula_acceptance.json
+prune .git
+prune .venv
+prune build
+prune build-sanitize
+prune dist

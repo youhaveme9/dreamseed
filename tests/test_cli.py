@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import tempfile
 import unittest
@@ -6,7 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BINARY = ROOT / "build" / "dreamseed"
+BINARY = Path(os.environ.get("DREAMSEED_BINARY", str(ROOT / "build" / "dreamseed")))
 
 
 class CliTests(unittest.TestCase):
@@ -39,6 +40,34 @@ class CliTests(unittest.TestCase):
         self.assertEqual(data["seed"], "0")
         self.assertEqual(data["center_biome"], "river")
         self.assertGreater(data["biome_sampling"]["sample_count"], 1000)
+
+    def test_structured_biome_map(self):
+        completed = subprocess.run(
+            [BINARY, "inspect", "--config", ROOT / "examples" / "inspect_biome_map.json"],
+            text=True, capture_output=True, check=True,
+        )
+        data = json.loads(completed.stdout)
+        biome_map = data["biome_map"]
+        self.assertEqual(biome_map["encoding"], "palette_indices")
+        self.assertEqual((biome_map["width"], biome_map["height"]), (9, 9))
+        self.assertEqual(len(biome_map["rows"]), 9)
+        self.assertEqual(
+            biome_map["palette"][biome_map["rows"][4][4]],
+            data["center_biome"],
+        )
+
+    def test_inspection_accepts_every_advertised_structure(self):
+        capabilities = json.loads(subprocess.check_output([BINARY, "capabilities"], text=True))
+        request = {
+            "minecraft_version": "1.21.1", "seed": "0",
+            "area": {"radius": 64, "sample_step": 16},
+            "structures": capabilities["structure_filters"]["types"],
+        }
+        completed = subprocess.run(
+            [BINARY, "inspect", "--config", "-"], input=json.dumps(request),
+            text=True, capture_output=True, check=True,
+        )
+        self.assertIn("structures", json.loads(completed.stdout))
 
     def test_compare_ranking(self):
         completed = subprocess.run(

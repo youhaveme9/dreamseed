@@ -3,6 +3,8 @@
   "displayName": "DreamSeed",
   "version": "0.1.0",
   "description": "Search Minecraft Java seeds with a local Cubiomes engine",
+  "homepage": "https://github.com/youhaveme9/dreamseed",
+  "repository": "https://github.com/youhaveme9/dreamseed",
   "author": {
     "name": "DreamSeed contributors"
   },

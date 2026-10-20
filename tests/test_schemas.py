@@ -2,7 +2,13 @@ import unittest
 
 from pydantic import ValidationError
 
-from dreamseed_mcp.schemas import InspectRequest, SearchRequest, parse_seed
+from dreamseed_mcp.schemas import (
+    InspectRequest,
+    MinecraftVerificationRequest,
+    RenderSeedMapRequest,
+    SearchRequest,
+    parse_seed,
+)
 
 
 class SchemaTests(unittest.TestCase):
@@ -77,6 +83,72 @@ class SchemaTests(unittest.TestCase):
         }
         with self.assertRaises(ValidationError):
             SearchRequest.model_validate(request)
+
+    def test_biome_map_size_is_bounded(self):
+        with self.assertRaises(ValidationError):
+            InspectRequest.model_validate({
+                "minecraft_version": "1.21.1",
+                "seed": "0",
+                "area": {"radius": 2048, "sample_step": 4},
+                "include_biome_map": True,
+            })
+
+        request = InspectRequest.model_validate({
+            "minecraft_version": "1.21.1",
+            "seed": "0",
+            "area": {"radius": 64, "sample_step": 16},
+            "include_biome_map": True,
+        })
+        self.assertTrue(request.include_biome_map)
+
+    def test_radius_area_stays_inside_coordinate_bounds(self):
+        with self.assertRaises(ValidationError):
+            SearchRequest.model_validate({
+                "minecraft_version": "1.21.1",
+                "hard_constraints": [{
+                    "id": "edge", "type": "structure_within", "structure": "village",
+                    "anchor": {"x": 30_000_000, "z": 0}, "radius": 1,
+                }],
+            })
+        with self.assertRaises(ValidationError):
+            InspectRequest.model_validate({
+                "minecraft_version": "1.21.1",
+                "seed": "0",
+                "area": {"center": {"x": 30_000_000, "z": 0}, "radius": 1},
+            })
+
+    def test_minecraft_verification_requires_targets(self):
+        with self.assertRaises(ValidationError):
+            MinecraftVerificationRequest.model_validate({
+                "minecraft_version": "1.21.1",
+                "seed": "0",
+            })
+        request = MinecraftVerificationRequest.model_validate({
+            "minecraft_version": "1.21.1",
+            "seed": "-7333811035076652275",
+            "structures": ["village", "pillager_outpost"],
+            "biomes": ["cherry_grove"],
+        })
+        self.assertEqual(request.reference_point.y, 64)
+
+    def test_render_map_size_is_bounded(self):
+        with self.assertRaises(ValidationError):
+            RenderSeedMapRequest.model_validate({
+                "minecraft_version": "1.21.1",
+                "seed": "0",
+                "area": {"radius": 2048, "sample_step": 16},
+            })
+        with self.assertRaises(ValidationError):
+            RenderSeedMapRequest.model_validate({
+                "minecraft_version": "1.21.1",
+                "seed": "0",
+                "markers": [{
+                    "kind": "structure",
+                    "name": "village",
+                    "coordinates": {"x": 0, "z": 0},
+                    "validation_status": "minecraft_located",
+                }],
+            })
 
 
 if __name__ == "__main__":

@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import atexit
+import base64
+import json
 import logging
 import sys
 from typing import Any
 
 from mcp.server import MCPServer
+from mcp_types import CallToolResult, ImageContent, TextContent
 from pydantic import ValidationError
 
 from .job_manager import JobError, JobManager
+from .minecraft_verifier import VerifierError
 from .schemas import (
     CancelResponse,
     CapabilitiesResponse,
@@ -17,6 +21,10 @@ from .schemas import (
     ErrorResponse,
     InspectRequest,
     InspectionResponse,
+    MinecraftVerificationRequest,
+    MinecraftVerificationResponse,
+    RenderSeedMapRequest,
+    RenderSeedMapResponse,
     ResultsResponse,
     SearchRequest,
     StartResponse,
@@ -34,7 +42,7 @@ atexit.register(manager.shutdown)
 
 
 def error_response(error: Exception) -> dict[str, Any]:
-    if isinstance(error, JobError):
+    if isinstance(error, (JobError, VerifierError)):
         return error.response()
     if isinstance(error, ValidationError):
         return {"ok": False, "error": {"code": "validation_error", "message": "request validation failed", "details": error.errors(include_url=False)}}
@@ -71,7 +79,7 @@ def get_search_status(job_id: str) -> StatusResponse:
 
 @server.tool()
 def get_search_results(job_id: str) -> ResultsResponse:
-    """Return verified results currently available for a search job."""
+    """Return ranked Cubiomes predictions currently available for a search job."""
     try:
         return ResultsResponse.model_validate(manager.results(job_id))
     except Exception as error:
@@ -103,6 +111,68 @@ def compare_seeds(request: CompareRequest) -> ComparisonResponse:
         return ComparisonResponse(ok=True, comparison=manager.compare(request.model_dump(by_alias=True, exclude_none=True)))
     except Exception as error:
         return ComparisonResponse.model_validate(error_response(error))
+
+
+@server.tool()
+def verify_seed_with_minecraft(request: MinecraftVerificationRequest) -> MinecraftVerificationResponse:
+    """Use the official local Minecraft Java server to locate targets and probe surfaces."""
+    try:
+        verification = manager.verify_with_minecraft(request.model_dump(exclude_none=True))
+        response = MinecraftVerificationResponse(ok=True, verification=verification)
+        rendering = verification.get("rendering")
+        if rendering is None:
+            return response
+        summary = {
+            "ok": True,
+            "seed": verification["seed"],
+            "status": verification["status"],
+            "locations": len(verification["locations"]),
+            "failures": len(verification["failures"]),
+            "caveats": verification["caveats"],
+        }
+        return CallToolResult(
+            content=[
+                TextContent(type="text", text=json.dumps(summary, separators=(",", ":"))),
+                ImageContent(
+                    type="image",
+                    data=base64.b64encode(rendering["svg"].encode("utf-8")).decode("ascii"),
+                    mimeType="image/svg+xml",
+                ),
+            ],
+            structuredContent=response.model_dump(mode="json"),
+        )
+    except Exception as error:
+        return MinecraftVerificationResponse.model_validate(error_response(error))
+
+
+@server.tool()
+def render_seed_map(request: RenderSeedMapRequest) -> RenderSeedMapResponse:
+    """Render a bounded sampled biome map as static SVG with status coded markers."""
+    try:
+        rendering = manager.render(request.model_dump(exclude_none=True))
+        response = RenderSeedMapResponse(ok=True, rendering=rendering)
+        summary = {
+            "ok": True,
+            "seed": rendering["seed"],
+            "format": rendering["format"],
+            "width": rendering["width"],
+            "height": rendering["height"],
+            "marker_count": rendering["marker_count"],
+            "caveats": rendering["caveats"],
+        }
+        return CallToolResult(
+            content=[
+                TextContent(type="text", text=json.dumps(summary, separators=(",", ":"))),
+                ImageContent(
+                    type="image",
+                    data=base64.b64encode(rendering["svg"].encode("utf-8")).decode("ascii"),
+                    mimeType="image/svg+xml",
+                ),
+            ],
+            structuredContent=response.model_dump(mode="json"),
+        )
+    except Exception as error:
+        return RenderSeedMapResponse.model_validate(error_response(error))
 
 
 def main() -> None:

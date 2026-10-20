@@ -1,0 +1,17 @@
+{
+  "minecraft_version": "1.21.1",
+  "seed": "2579",
+  "area": {
+    "center": {
+      "x": 0,
+      "z": 0
+    },
+    "radius": 512,
+    "sample_step": 32,
+    "y": 64
+  },
+  "structures": [
+    "village"
+  ],
+  "title": "DreamSeed candidate 2579"
+}

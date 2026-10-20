@@ -75,6 +75,8 @@ int main() {
     const auto capabilities = Engine::capabilities();
     check(capabilities["minecraft_versions"][0] == "1.21.1", "pinned version");
     check(capabilities["structure_filters"]["types"].size() == 10, "structure capabilities");
+    check(capabilities["inspection"]["biome_map_encoding"] == "palette_indices",
+          "biome map capability");
 
     const auto normalized = Engine::validateSearch(basicRequest());
     const auto renormalized = Engine::validateSearch(normalized);
@@ -89,6 +91,12 @@ int main() {
     invalid = basicRequest();
     invalid["hard_constraints"][0]["coordinate"]["x"] = 40000000;
     rejects([&] { Engine::validateSearch(invalid); }, "reject coordinate bound");
+    invalid = basicRequest();
+    invalid["hard_constraints"] = Json::array({
+        {{"id", "edge"}, {"type", "structure_within"}, {"structure", "village"},
+         {"anchor", {{"x", 30000000}, {"z", 0}}}, {"radius", 1}}
+    });
+    rejects([&] { Engine::validateSearch(invalid); }, "reject area beyond coordinate bound");
     invalid = basicRequest();
     invalid["unexpected"] = true;
     rejects([&] { Engine::validateSearch(invalid); }, "reject unknown field");
@@ -213,6 +221,22 @@ int main() {
     timeout["budget"]["max_seconds"] = 0.05;
     const auto timeout_result = Engine::search(timeout);
     check(timeout_result["state"] == "timed_out", "search timeout");
+
+    Json map_request = {
+        {"minecraft_version", "1.21.1"},
+        {"seed", "7810500614729040739"},
+        {"area", {{"center", {{"x", 0}, {"z", 0}}}, {"radius", 64},
+                  {"sample_step", 16}, {"y", 64}}},
+        {"structures", Json::array({"village", "pillager_outpost"})},
+        {"include_biome_map", true}
+    };
+    const auto inspection = Engine::inspect(map_request);
+    check(inspection.contains("biome_map"), "biome map returned");
+    check(inspection["biome_map"]["width"] == 9, "biome map width");
+    check(inspection["biome_map"]["height"] == 9, "biome map height");
+    const auto center_palette_index = inspection["biome_map"]["rows"][4][4].get<size_t>();
+    check(inspection["biome_map"]["palette"][center_palette_index] == inspection["center_biome"],
+          "biome map center matches inspection");
 
     return failures == 0 ? 0 : 1;
 }

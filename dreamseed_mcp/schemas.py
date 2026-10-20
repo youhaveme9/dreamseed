@@ -133,6 +133,11 @@ class SearchRequest(StrictModel):
         for preference in self.soft_preferences:
             if preference.constraint_id not in feature_ids:
                 raise ValueError("preference must reference a feature constraint")
+        for item in self.hard_constraints:
+            if isinstance(item, (BiomeWithin, StructureWithin)):
+                anchor = item.anchor or self.reference_point
+                if abs(anchor.x) + item.radius > 30_000_000 or abs(anchor.z) + item.radius > 30_000_000:
+                    raise ValueError("constraint area extends beyond the supported coordinate range")
         relation_ids: set[str] = set()
         for item in self.hard_constraints:
             if isinstance(item, MaximumDistance):
@@ -177,12 +182,25 @@ class InspectRequest(StrictModel):
     structures: list[StructureName] = Field(
         default_factory=lambda: ["village", "desert_pyramid"], max_length=10
     )
+    include_biome_map: bool = False
 
     @field_validator("seed")
     @classmethod
     def validate_seed(cls, value: str) -> str:
         parse_seed(value)
         return value
+
+    @model_validator(mode="after")
+    def validate_map_size(self) -> InspectRequest:
+        if (
+            abs(self.area.center.x) + self.area.radius > 30_000_000
+            or abs(self.area.center.z) + self.area.radius > 30_000_000
+        ):
+            raise ValueError("inspection area extends beyond the supported coordinate range")
+        width = self.area.radius * 2 // self.area.sample_step + 1
+        if self.include_biome_map and width * width > 100_000:
+            raise ValueError("biome map output would exceed 100000 points")
+        return self
 
 
 class CompareRequest(StrictModel):
@@ -264,6 +282,37 @@ class ValidationCapabilities(StrictModel):
     biome_within: str
 
 
+class InspectionCapabilities(StrictModel):
+    max_radius: int
+    max_summary_sample_points: int
+    max_biome_map_points: int
+    biome_map_encoding: str
+
+
+class JobStorageCapabilities(StrictModel):
+    persistent: bool
+    format: str
+    retained_job_limit: int
+    completed_job_recovery: bool
+    active_job_restart_behavior: str
+
+
+class AuthoritativeVerificationCapabilities(StrictModel):
+    available: bool
+    source: str
+    minecraft_version: str
+    structure_targets: list[str]
+    biome_targets: list[str]
+    statuses: list[str]
+    surface_probe: bool
+    max_concurrent_per_server: int
+    min_seconds: int
+    max_seconds: int
+    java_memory_mb: int
+    setup_command: str
+    detail: str
+
+
 class Capabilities(StrictModel):
     engine: str
     engine_version: str
@@ -277,6 +326,9 @@ class Capabilities(StrictModel):
     distance_metric: str
     search_strategies: list[str]
     search_limits: SearchLimits
+    inspection: InspectionCapabilities
+    job_storage: JobStorageCapabilities
+    authoritative_verification: AuthoritativeVerificationCapabilities
     validation: ValidationCapabilities
     unsupported: list[str]
     experimental: list[str]
@@ -308,6 +360,8 @@ class StatusResponse(StrictModel):
     candidate_budget: int | None = None
     progress_note: str | None = None
     coverage: str | None = None
+    persisted: bool | None = None
+    recovered: bool | None = None
     error: ErrorInfo | None = None
 
 
@@ -373,6 +427,8 @@ class ResultsResponse(StrictModel):
     search_complete: bool | None = None
     coverage: str | None = None
     limitations: list[str] = Field(default_factory=list)
+    persisted: bool | None = None
+    recovered: bool | None = None
     error: ErrorInfo | None = None
 
 
@@ -405,6 +461,18 @@ class BiomeSampling(StrictModel):
     y: int
 
 
+class BiomeMap(StrictModel):
+    encoding: Literal["palette_indices"]
+    origin: Coordinate
+    width: int
+    height: int
+    sample_step: int
+    y: int
+    palette: list[str]
+    rows: list[list[int]]
+    semantics: str
+
+
 class NormalizedInspectArea(StrictModel):
     center: Coordinate
     radius: int
@@ -420,6 +488,7 @@ class Inspection(StrictModel):
     center_biome: str
     biome_sampling: BiomeSampling
     biome_summary: list[BiomeSummary]
+    biome_map: BiomeMap | None = None
     structures: list[StructureInspection]
     caveats: list[str]
 
@@ -456,4 +525,152 @@ class Comparison(StrictModel):
 class ComparisonResponse(StrictModel):
     ok: bool
     comparison: Comparison | None = None
+    error: ErrorInfo | None = None
+
+
+class RenderedSeedMap(StrictModel):
+    seed: str
+    minecraft_version: Literal["1.21.1"]
+    format: Literal["svg"]
+    width: int
+    height: int
+    palette: list[str]
+    marker_count: int
+    svg: str
+    semantics: str
+    caveats: list[str]
+
+
+VerificationStructureName = Literal["village", "pillager_outpost"]
+
+
+class VerificationReference(StrictModel):
+    x: int = Field(default=0, ge=-30_000_000, le=30_000_000)
+    y: int = Field(default=64, ge=-64, le=320)
+    z: int = Field(default=0, ge=-30_000_000, le=30_000_000)
+
+
+class MinecraftVerificationRequest(StrictModel):
+    minecraft_version: Literal["1.21.1"]
+    seed: str
+    reference_point: VerificationReference = VerificationReference()
+    structures: list[VerificationStructureName] = Field(default_factory=list, max_length=2)
+    biomes: list[BiomeName] = Field(default_factory=list, max_length=8)
+    probe_surfaces: bool = True
+    include_biome_map: bool = False
+    map_area: InspectArea | None = None
+    max_seconds: int = Field(default=180, ge=30, le=300)
+
+    @field_validator("seed")
+    @classmethod
+    def validate_seed(cls, value: str) -> str:
+        parse_seed(value)
+        return value
+
+    @model_validator(mode="after")
+    def validate_targets(self) -> MinecraftVerificationRequest:
+        if not self.structures and not self.biomes:
+            raise ValueError("at least one structure or biome target is required")
+        if len(self.structures) != len(set(self.structures)):
+            raise ValueError("structure targets must be unique")
+        if len(self.biomes) != len(set(self.biomes)):
+            raise ValueError("biome targets must be unique")
+        if self.map_area is not None and not self.include_biome_map:
+            raise ValueError("map_area requires include_biome_map")
+        if self.map_area is not None:
+            if (
+                abs(self.map_area.center.x) + self.map_area.radius > 30_000_000
+                or abs(self.map_area.center.z) + self.map_area.radius > 30_000_000
+            ):
+                raise ValueError("verification map area extends beyond the supported coordinate range")
+            width = self.map_area.radius * 2 // self.map_area.sample_step + 1
+            if width * width > 4_225:
+                raise ValueError("verification map output would exceed 4225 cells")
+        return self
+
+
+class SurfaceProbe(StrictModel):
+    status: Literal["surface_probed", "surface_probe_failed"]
+    coordinates: FeatureCoordinate | None = None
+    is_water: bool | None = None
+    is_lava: bool | None = None
+    safe_teleport: bool
+    detail: str
+
+
+class MinecraftLocatedFeature(StrictModel):
+    kind: Literal["structure", "biome"]
+    name: str
+    located_id: str
+    coordinates: FeatureCoordinate
+    horizontal_distance: float
+    reported_distance: float | None = None
+    verification_status: Literal["minecraft_located"]
+    surface: SurfaceProbe | None = None
+
+
+class VerificationFailure(StrictModel):
+    kind: Literal["structure", "biome"]
+    name: str
+    code: str
+    message: str
+
+
+class MinecraftVerification(StrictModel):
+    seed: str
+    minecraft_version: Literal["1.21.1"]
+    edition: Literal["Java"]
+    source: Literal["official_minecraft_java_server"]
+    status: Literal["minecraft_located", "partially_located", "not_located"]
+    reference_point: VerificationReference
+    locations: list[MinecraftLocatedFeature]
+    failures: list[VerificationFailure]
+    elapsed_seconds: float
+    caveats: list[str]
+    rendering: RenderedSeedMap | None = None
+
+
+class MinecraftVerificationResponse(StrictModel):
+    ok: bool
+    verification: MinecraftVerification | None = None
+    error: ErrorInfo | None = None
+
+
+class MapMarker(StrictModel):
+    kind: Literal["structure", "biome", "reference"]
+    name: str = Field(min_length=1, max_length=80)
+    coordinates: FeatureCoordinate
+    validation_status: Literal["client_supplied"] = "client_supplied"
+
+
+class RenderSeedMapRequest(StrictModel):
+    minecraft_version: Literal["1.21.1"]
+    seed: str
+    area: InspectArea = InspectArea(radius=512, sample_step=32, y=96)
+    structures: list[StructureName] = Field(default_factory=list, max_length=10)
+    markers: list[MapMarker] = Field(default_factory=list, max_length=64)
+    title: str | None = Field(default=None, max_length=120)
+
+    @field_validator("seed")
+    @classmethod
+    def validate_seed(cls, value: str) -> str:
+        parse_seed(value)
+        return value
+
+    @model_validator(mode="after")
+    def validate_render_area(self) -> RenderSeedMapRequest:
+        if (
+            abs(self.area.center.x) + self.area.radius > 30_000_000
+            or abs(self.area.center.z) + self.area.radius > 30_000_000
+        ):
+            raise ValueError("render area extends beyond the supported coordinate range")
+        width = self.area.radius * 2 // self.area.sample_step + 1
+        if width * width > 4_225:
+            raise ValueError("render output would exceed 4225 cells")
+        return self
+
+
+class RenderSeedMapResponse(StrictModel):
+    ok: bool
+    rendering: RenderedSeedMap | None = None
     error: ErrorInfo | None = None
