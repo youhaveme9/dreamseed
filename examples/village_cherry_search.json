@@ -1,0 +1,61 @@
+{
+  "minecraft_version": "1.21.1",
+  "reference_point": {
+    "x": 0,
+    "z": 0
+  },
+  "hard_constraints": [
+    {
+      "id": "origin_plains",
+      "type": "biome_at",
+      "biome": "plains",
+      "coordinate": {
+        "x": 0,
+        "z": 0
+      },
+      "y": 64
+    },
+    {
+      "id": "village",
+      "type": "structure_within",
+      "structure": "village",
+      "radius": 500,
+      "count": 1
+    },
+    {
+      "id": "cherry",
+      "type": "biome_within",
+      "biome": "cherry_grove",
+      "radius": 1024,
+      "sample_step": 16,
+      "y": 64
+    },
+    {
+      "id": "village_cherry_distance",
+      "type": "max_distance",
+      "from": "village",
+      "to": "cherry",
+      "max_distance": 100
+    }
+  ],
+  "soft_preferences": [
+    {
+      "type": "minimize_distance",
+      "constraint_id": "village",
+      "weight": 1
+    },
+    {
+      "type": "minimize_distance",
+      "constraint_id": "cherry",
+      "weight": 1
+    }
+  ],
+  "budget": {
+    "strategy": "sequential",
+    "start_seed": "8009581673339289650",
+    "max_candidates": 1,
+    "max_seconds": 10,
+    "workers": 1
+  },
+  "max_results": 1
+}

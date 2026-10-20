@@ -1,0 +1,28 @@
+{
+  "minecraft_version": "1.21.1",
+  "seeds": ["2579", "0", "659"],
+  "reference_point": {"x": 0, "z": 0},
+  "hard_constraints": [
+    {
+      "id": "origin_plains",
+      "type": "biome_at",
+      "biome": "plains",
+      "coordinate": {"x": 0, "z": 0},
+      "y": 64
+    },
+    {
+      "id": "village",
+      "type": "structure_within",
+      "structure": "village",
+      "radius": 500,
+      "count": 1
+    }
+  ],
+  "soft_preferences": [
+    {
+      "type": "minimize_distance",
+      "constraint_id": "village",
+      "weight": 1
+    }
+  ]
+}

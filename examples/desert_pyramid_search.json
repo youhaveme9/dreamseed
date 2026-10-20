@@ -1,0 +1,28 @@
+{
+  "minecraft_version": "1.21.1",
+  "reference_point": {"x": 0, "z": 0},
+  "hard_constraints": [
+    {
+      "id": "pyramid",
+      "type": "structure_within",
+      "structure": "desert_pyramid",
+      "radius": 1000,
+      "count": 1
+    }
+  ],
+  "soft_preferences": [
+    {
+      "type": "minimize_distance",
+      "constraint_id": "pyramid",
+      "weight": 1
+    }
+  ],
+  "budget": {
+    "strategy": "sequential",
+    "start_seed": "0",
+    "max_candidates": 1000,
+    "max_seconds": 10,
+    "workers": 4
+  },
+  "max_results": 3
+}

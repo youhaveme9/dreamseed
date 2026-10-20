@@ -1,0 +1,11 @@
+{
+  "name": "dreamseed",
+  "displayName": "DreamSeed",
+  "version": "0.1.0",
+  "description": "Search Minecraft Java seeds with a local Cubiomes engine",
+  "author": {
+    "name": "DreamSeed contributors"
+  },
+  "license": "MIT",
+  "keywords": ["minecraft", "seeds", "cubiomes", "mcp"]
+}

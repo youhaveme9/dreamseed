@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "dreamseed": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/.venv/bin/python",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/server.py"],
+      "env": {
+        "DREAMSEED_BINARY": "${CLAUDE_PLUGIN_ROOT}/build/dreamseed"
+      }
+    }
+  }
+}

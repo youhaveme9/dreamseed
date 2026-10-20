@@ -1,0 +1,1 @@
+"""DreamSeed MCP server."""

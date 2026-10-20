@@ -1,0 +1,11 @@
+{
+  "minecraft_version": "1.21.1",
+  "seed": "0",
+  "area": {
+    "center": {"x": 0, "z": 0},
+    "radius": 512,
+    "sample_step": 16,
+    "y": 64
+  },
+  "structures": ["village", "desert_pyramid"]
+}

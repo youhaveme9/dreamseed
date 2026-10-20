@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dreamseed-mcp"
+version = "0.1.0"
+description = "Local MCP server for deterministic Minecraft seed search"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{name = "DreamSeed contributors"}]
+keywords = ["minecraft", "cubiomes", "mcp", "seed search"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Topic :: Games/Entertainment",
+]
+dependencies = [
+  "mcp==2.2.0",
+  "pydantic==2.12.5"
+]
+
+[project.scripts]
+dreamseed-mcp = "dreamseed_mcp.server:main"
+
+[tool.setuptools.packages.find]
+include = ["dreamseed_mcp*"]
