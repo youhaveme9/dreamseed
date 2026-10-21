@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#15392c" />
+    <meta
+      name="description"
+      content="Describe your ideal Minecraft world. DreamSeed finds real Java Edition seeds with the biomes and structures you want, then checks them with Minecraft itself."
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:title"
+      content="DreamSeed — Your next world starts here"
+    />
+    <meta
+      property="og:description"
+      content="Less rerolling. More adventure. Find and verify Minecraft Java seeds with your AI client, a native CLI, or a local browser app."
+    />
+    <meta property="og:url" content="https://youhaveme9.github.io/dreamseed/" />
+    <meta
+      property="og:image"
+      content="https://youhaveme9.github.io/dreamseed/assets/dream-world.webp"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="canonical" href="https://youhaveme9.github.io/dreamseed/" />
+    <link rel="icon" href="assets/seed-mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="app.js" defer></script>
+    <title>DreamSeed · Find your next Minecraft world</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="container navigation">
+        <a class="brand" href="#" aria-label="DreamSeed home"
+          ><img src="assets/seed-mark.svg" width="34" height="34" alt="" /><span
+            >DreamSeed<span class="brand-dot">.</span></span
+          ></a
+        >
+        <button
+          class="menu-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="navigation-links"
+          aria-label="Open navigation"
+        >
+          <span></span><span></span>
+        </button>
+        <nav
+          class="navigation-links"
+          id="navigation-links"
+          aria-label="Main navigation"
+        >
+          <a href="#how-it-works">How it works</a
+          ><a href="#examples">What to ask</a
+          ><a href="#real-seed">A real seed</a>
+          <a class="nav-github" href="https://github.com/youhaveme9/dreamseed"
+            ><svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.86c-2.78.6-3.37-1.18-3.37-1.18-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.64-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.03a9.58 9.58 0 0 1 5 0c1.91-1.3 2.75-1.03 2.75-1.03.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.76c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"
+              /></svg
+            >GitHub <span aria-hidden="true">↗</span></a
+          >
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero container" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <a
+            class="release-tag"
+            href="https://github.com/youhaveme9/dreamseed/releases/tag/v0.2.0"
+            ><span class="status-dot"></span> DREAMSEED 0.2.0 IS HERE
+            <span aria-hidden="true">↗</span></a
+          >
+          <h1 id="hero-title">
+            Your next world.<br />A little more<br /><span>you.</span>
+          </h1>
+          <p class="hero-description">
+            A village beside cherry blossoms. Mountains on the horizon. Describe
+            your Minecraft world, and find a real seed to make it happen.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#get-started"
+              >Get DreamSeed <span aria-hidden="true">↗</span></a
+            ><a class="text-link" href="#real-seed"
+              >Explore a real seed <span aria-hidden="true">→</span></a
+            >
+          </div>
+          <div class="hero-meta">
+            <span>Open source</span><span>Runs locally</span
+            ><span>No model API key</span>
+          </div>
+        </div>
+        <figure class="hero-visual">
+          <div class="landscape-frame">
+            <img
+              class="hero-image"
+              src="assets/dream-world.webp"
+              width="1536"
+              height="1024"
+              alt="Illustrative voxel landscape with a green village, pink cherry trees, a river, and snowy mountains"
+              fetchpriority="high"
+            />
+            <span class="image-edition"
+              >JAVA EDITION <span>1.21.1 / 1.21.3</span></span
+            >
+            <div class="imagination-card">
+              <span class="prompt-avatar" aria-hidden="true">✦</span>
+              <div>
+                <span class="tiny-label">START WITH AN IDEA</span>
+                <p>
+                  “A village near a cherry grove,<br />with mountains nearby.”
+                </p>
+              </div>
+              <span class="prompt-arrow" aria-hidden="true">↗</span>
+            </div>
+          </div>
+          <figcaption>
+            Illustrative artwork · Your results come from real world generation.
+          </figcaption>
+        </figure>
+      </section>
+
+      <div class="compatibility">
+        <div class="container compatibility-inner">
+          <span class="tiny-label">YOUR CLIENT. YOUR ADVENTURE.</span>
+          <div class="client-names">
+            <span
+              ><span class="client-glyph" aria-hidden="true">⌘</span>
+              Codex</span
+            ><span
+              ><span class="client-glyph claude-glyph" aria-hidden="true"
+                >✳</span
+              >
+              Claude Code</span
+            ><span
+              ><span class="client-glyph" aria-hidden="true">↗</span> Any MCP
+              client</span
+            ><span class="local-client">CLI & local browser</span>
+          </div>
+        </div>
+      </div>
+
+      <section
+        class="section container"
+        id="how-it-works"
+        aria-labelledby="how-title"
+      >
+        <div class="section-intro">
+          <div>
+            <p class="eyebrow">FROM “WHAT IF” TO WORLD SEED</p>
+            <h2 id="how-title">Less rerolling.<br />More adventure.</h2>
+          </div>
+          <p>
+            Keep the exploration. Skip the endless world creation screen.
+            DreamSeed gives your search a direction.
+          </p>
+        </div>
+        <div class="steps">
+          <article class="step">
+            <div class="step-top">
+              <span class="step-number">01 /</span
+              ><svg viewBox="0 0 48 48" aria-hidden="true">
+                <path d="M9 10h30v22H22l-9 7v-7H9zM16 18h16M16 24h10" />
+              </svg>
+            </div>
+            <h3>Describe your world</h3>
+            <p>
+              Tell your AI client which biomes and structures matter. Set the
+              must haves, then add preferences.
+            </p>
+            <span class="step-detail">“Plains here. A village close by.”</span>
+          </article>
+          <article class="step">
+            <div class="step-top">
+              <span class="step-number">02 /</span
+              ><svg viewBox="0 0 48 48" aria-hidden="true">
+                <circle cx="21" cy="21" r="12" />
+                <path d="m30 30 10 10M17 21h8M21 17v8" />
+              </svg>
+            </div>
+            <h3>Search real seeds</h3>
+            <p>
+              The native engine checks Minecraft generation rules, combines your
+              constraints, and ranks matches.
+            </p>
+            <span class="step-detail"
+              >Your budget. Your CPU. Your results.</span
+            >
+          </article>
+          <article class="step">
+            <div class="step-top">
+              <span class="step-number">03 /</span
+              ><svg viewBox="0 0 48 48" aria-hidden="true">
+                <path
+                  d="m24 6 15 6v12c0 9-15 18-15 18S9 33 9 24V12zM17 23l5 5 10-11"
+                />
+              </svg>
+            </div>
+            <h3>Check before you play</h3>
+            <p>
+              Ask the optional official Minecraft verifier to confirm the
+              selected biomes, structure starts, and distances.
+            </p>
+            <span class="step-detail">See the evidence behind the result.</span>
+          </article>
+        </div>
+      </section>
+
+      <section
+        class="examples-section"
+        id="examples"
+        aria-labelledby="examples-title"
+      >
+        <div class="container">
+          <div class="section-intro">
+            <div>
+              <p class="eyebrow">A FEW PLACES TO START</p>
+              <h2 id="examples-title">
+                What does your<br />next world look like?
+              </h2>
+            </div>
+            <p>
+              Copy a prompt into your connected AI client. Make it your own,
+              then refine the search as you go.
+            </p>
+          </div>
+          <div class="prompt-grid">
+            <article class="prompt-card pink-card">
+              <div class="prompt-card-top">
+                <span class="pixel-icon blossom" aria-hidden="true">✿</span
+                ><span class="tiny-label">THE PEACEFUL START</span>
+              </div>
+              <h3>A little village.<br />A lot of pink.</h3>
+              <p id="prompt-cherry">
+                Use DreamSeed to find three Java 1.21.3 seeds with a village
+                within 750 blocks of the origin and a cherry grove within 1024
+                blocks at Y 96. Require a village and cherry grove pair within
+                500 blocks. Prefer the closest pair of features to the origin.
+                Use sampled strategy, sample seed 20261020, 100000 candidates,
+                60 seconds, and 4 workers. Show coordinates, distances,
+                coverage, and validation status.
+              </p>
+              <div class="prompt-card-bottom">
+                <span>VILLAGE + CHERRY GROVE</span
+                ><button
+                  type="button"
+                  class="copy-prompt"
+                  data-copy="prompt-cherry"
+                  aria-label="Copy village and cherry grove prompt"
+                >
+                  Copy prompt
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="8" y="8" width="12" height="12" rx="2" />
+                    <path d="M15 8V4H4v11h4" />
+                  </svg>
+                </button>
+              </div>
+            </article>
+            <article class="prompt-card sage-card">
+              <div class="prompt-card-top">
+                <span class="pixel-icon" aria-hidden="true">⚑</span
+                ><span class="tiny-label">A LITTLE MORE ACTION</span>
+              </div>
+              <h3>Good neighbors.<br />Questionable neighbors.</h3>
+              <p id="prompt-outpost">
+                Use DreamSeed to find three Java 1.21.3 seeds with a village and
+                a pillager outpost within 2000 blocks of the origin. Require a
+                valid pair within 750 blocks of each other. Prefer both
+                structures closer to the origin. Use sampled strategy, sample
+                seed 20261020, 100000 candidates, 60 seconds, and 4 workers.
+                Return the measured pair distance and validation status.
+              </p>
+              <div class="prompt-card-bottom">
+                <span>VILLAGE + PILLAGER OUTPOST</span
+                ><button
+                  type="button"
+                  class="copy-prompt"
+                  data-copy="prompt-outpost"
+                  aria-label="Copy village and outpost prompt"
+                >
+                  Copy prompt
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="8" y="8" width="12" height="12" rx="2" />
+                    <path d="M15 8V4H4v11h4" />
+                  </svg>
+                </button>
+              </div>
+            </article>
+            <article class="prompt-card blue-card">
+              <div class="prompt-card-top">
+                <span class="pixel-icon mountain" aria-hidden="true">△</span
+                ><span class="tiny-label">THE HIGH GROUND</span>
+              </div>
+              <h3>Pink blossoms.<br />Snowy horizons.</h3>
+              <p id="prompt-peaks">
+                Use DreamSeed to find three Java 1.21.3 seeds with a cherry
+                grove within 1024 blocks of the origin at Y 96 and jagged peaks
+                within 1024 blocks at Y 128. Use sample step 32 and prefer both
+                biomes closer to the origin. Use sampled strategy, sample seed
+                20261020, 100000 candidates, 60 seconds, and 4 workers. Explain
+                sampling limits. Do not claim a surrounding mountain range.
+              </p>
+              <div class="prompt-card-bottom">
+                <span>CHERRY GROVE + JAGGED PEAKS</span
+                ><button
+                  type="button"
+                  class="copy-prompt"
+                  data-copy="prompt-peaks"
+                  aria-label="Copy cherry grove and mountain prompt"
+                >
+                  Copy prompt
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="8" y="8" width="12" height="12" rx="2" />
+                    <path d="M15 8V4H4v11h4" />
+                  </svg>
+                </button>
+              </div>
+            </article>
+          </div>
+          <p class="examples-note">
+            <span aria-hidden="true">↳</span> Your client should check
+            capabilities first and monitor the job until it finishes. A search
+            may find no match within its budget.
+          </p>
+        </div>
+      </section>
+
+      <section
+        class="section container evidence-section"
+        id="real-seed"
+        aria-labelledby="evidence-title"
+      >
+        <div class="evidence-copy">
+          <p class="eyebrow">A REAL SEED. WITH RECEIPTS.</p>
+          <h2 id="evidence-title">This village?<br />32 blocks away.</h2>
+          <p>
+            Plains at the origin. A village close enough to walk to. This Java
+            1.21.3 result was found by DreamSeed and checked with the official
+            Minecraft server.
+          </p>
+          <div class="seed-display">
+            <span class="tiny-label">FULL WORLD SEED</span>
+            <div>
+              <code id="verified-seed">-3989987067671208281</code
+              ><button
+                type="button"
+                class="icon-button"
+                data-copy="verified-seed"
+                aria-label="Copy verified world seed"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="8" y="8" width="12" height="12" rx="2" />
+                  <path d="M15 8V4H4v11h4" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <dl class="seed-facts">
+            <div>
+              <dt>Origin biome</dt>
+              <dd>Plains <span>X 0 · Y 64 · Z 0</span></dd>
+            </div>
+            <div>
+              <dt>Village start</dt>
+              <dd>X 32 · Z 0 <span>32 blocks from origin</span></dd>
+            </div>
+            <div>
+              <dt>Proximity score</dt>
+              <dd>93.6 / 100 <span>Village within 500 blocks</span></dd>
+            </div>
+            <div>
+              <dt>Official checks</dt>
+              <dd class="verified-text">
+                <span aria-hidden="true">✓</span> Both requirements verified
+              </dd>
+            </div>
+          </dl>
+          <a
+            class="text-link"
+            href="https://github.com/youhaveme9/dreamseed/blob/v0.2.0/docs/validation/2026-10-21.md"
+            >Read the verification record <span aria-hidden="true">↗</span></a
+          >
+          <p class="evidence-caveat">
+            Distances are relative to the world origin, not actual world spawn.
+            Structure start confirmation covers saved start and piece data. It
+            does not check every building block or guarantee a safe teleport.
+          </p>
+        </div>
+        <figure class="map-panel">
+          <div class="panel-bar">
+            <span><span class="status-dot"></span> ACTUAL ENGINE OUTPUT</span
+            ><span>JAVA 1.21.3</span>
+          </div>
+          <a
+            href="assets/verified-biome-map.svg"
+            aria-label="Open the full size biome map"
+          >
+            <img
+              src="assets/verified-biome-map.svg"
+              width="800"
+              height="830"
+              alt="Actual sampled biome map for seed negative 3989987067671208281, centered on the origin, with the verified village start at X 32 Z 0"
+              loading="lazy"
+            />
+          </a>
+          <figcaption>
+            <span>Biome samples at Y 64 · Step 16 blocks</span
+            ><a href="assets/verified-inspection.json">View source data ↗</a>
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="terrain-section">
+        <div class="container terrain-inner">
+          <div class="terrain-picture">
+            <img
+              src="assets/terrain-preview.svg"
+              width="640"
+              height="440"
+              alt="Isometric surface mesh derived from 25 official Minecraft terrain samples"
+              loading="lazy"
+            /><span class="terrain-caption"
+              >OBSERVED HEIGHTS → SAMPLED SURFACE</span
+            >
+          </div>
+          <div class="terrain-copy">
+            <p class="eyebrow">GO A LITTLE DEEPER</p>
+            <h2>Look beyond<br />the coordinates.</h2>
+            <p>
+              Inspect generated heightmaps, surface blocks, and water depth.
+              Turn real observations into biome maps, SVG previews, and
+              rotatable surface meshes in the local app.
+            </p>
+            <a
+              class="text-link"
+              href="https://github.com/youhaveme9/dreamseed/blob/v0.2.0/docs/terrain.md"
+              >Explore terrain tools <span aria-hidden="true">↗</span></a
+            >
+            <p class="terrain-note">
+              Shown: 25 official samples from seed
+              <code>-7333811035076652275</code>, Java 1.21.3. A sampled surface
+              is a preview. Terrain classifiers remain experimental.
+              <a href="assets/terrain-samples.json">View source samples ↗</a>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="section container install-section"
+        id="get-started"
+        aria-labelledby="install-title"
+      >
+        <div class="install-heading">
+          <div>
+            <p class="eyebrow">YOUR NEXT ADVENTURE IS LOCAL</p>
+            <h2 id="install-title">
+              A small setup.<br />A world of possibilities.
+            </h2>
+          </div>
+          <p>
+            Build once, connect your favorite client, and start exploring.
+            DreamSeed runs on macOS and Linux. No model API key is required by
+            DreamSeed.
+          </p>
+        </div>
+        <div class="install-layout">
+          <div class="terminal">
+            <div class="terminal-header">
+              <div class="terminal-dots" aria-hidden="true">
+                <i></i><i></i><i></i>
+              </div>
+              <span>dreamseed / quick start</span
+              ><button
+                type="button"
+                class="terminal-copy"
+                id="copy-install"
+                data-copy="install-source"
+              >
+                Copy <span aria-hidden="true">⧉</span>
+              </button>
+            </div>
+            <div
+              class="install-tabs"
+              role="tablist"
+              aria-label="Setup instructions"
+            >
+              <button
+                id="tab-source"
+                type="button"
+                role="tab"
+                aria-selected="true"
+                aria-controls="panel-source"
+                data-tab="source"
+              >
+                1. Build</button
+              ><button
+                id="tab-codex"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="panel-codex"
+                data-tab="codex"
+                tabindex="-1"
+              >
+                2. Codex</button
+              ><button
+                id="tab-claude"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="panel-claude"
+                data-tab="claude"
+                tabindex="-1"
+              >
+                2. Claude Code</button
+              ><button
+                id="tab-cli"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="panel-cli"
+                data-tab="cli"
+                tabindex="-1"
+              >
+                3. Try a search
+              </button>
+            </div>
+            <div
+              class="terminal-panel"
+              id="panel-source"
+              role="tabpanel"
+              aria-labelledby="tab-source"
+              tabindex="0"
+            >
+              <p class="code-note"># From a terminal on your computer</p>
+              <pre
+                tabindex="0"
+                aria-label="Build commands"
+              ><code id="install-source">git clone --branch v0.2.0 https://github.com/youhaveme9/dreamseed.git
+cd dreamseed
+make build
+make venv
+make doctor</code></pre>
+              <p class="terminal-footnote">
+                Needs Python 3.11+, CMake 3.20+, Git, Make, and C/C++ compilers.
+              </p>
+            </div>
+            <div
+              class="terminal-panel"
+              id="panel-codex"
+              role="tabpanel"
+              aria-labelledby="tab-codex"
+              tabindex="0"
+              hidden
+            >
+              <p class="code-note">
+                # Replace these with your absolute checkout paths
+              </p>
+              <pre
+                tabindex="0"
+                aria-label="Codex setup commands"
+              ><code id="install-codex">codex mcp add dreamseed \
+  --env "DREAMSEED_BINARY=/path/to/dreamseed/build/dreamseed" -- \
+  "/path/to/dreamseed/.venv/bin/dreamseed-mcp"
+codex mcp list</code></pre>
+              <p class="terminal-footnote">
+                Restart the client after setup. Your AI client has its own
+                access requirements.
+              </p>
+            </div>
+            <div
+              class="terminal-panel"
+              id="panel-claude"
+              role="tabpanel"
+              aria-labelledby="tab-claude"
+              tabindex="0"
+              hidden
+            >
+              <p class="code-note">
+                # Replace these with your absolute checkout paths
+              </p>
+              <pre
+                tabindex="0"
+                aria-label="Claude Code setup commands"
+              ><code id="install-claude">claude mcp add dreamseed --scope user --transport stdio \
+  -e "DREAMSEED_BINARY=/path/to/dreamseed/build/dreamseed" -- \
+  "/path/to/dreamseed/.venv/bin/dreamseed-mcp"
+claude mcp list</code></pre>
+              <p class="terminal-footnote">
+                Or load the repository as the Claude Code plugin described in
+                the README.
+              </p>
+            </div>
+            <div
+              class="terminal-panel"
+              id="panel-cli"
+              role="tabpanel"
+              aria-labelledby="tab-cli"
+              tabindex="0"
+              hidden
+            >
+              <p class="code-note"># Search with the native engine</p>
+              <pre
+                tabindex="0"
+                aria-label="Search commands"
+              ><code id="install-cli">./build/dreamseed search \
+  --config examples/multi_constraint_search.json
+
+# Or open the local browser app
+.venv/bin/dreamseed-web --port 8765</code></pre>
+              <p class="terminal-footnote">
+                Open http://127.0.0.1:8765 after starting the browser app.
+              </p>
+            </div>
+          </div>
+          <aside class="install-aside">
+            <span class="download-icon" aria-hidden="true">↓</span>
+            <h3>Prefer a download?</h3>
+            <p>
+              Grab a native binary for your platform and the Python wheel from
+              the release. Checksums and source are included.
+            </p>
+            <a
+              class="button button-primary"
+              href="https://github.com/youhaveme9/dreamseed/releases/tag/v0.2.0"
+              >Download 0.2.0 <span aria-hidden="true">↗</span></a
+            ><a
+              class="text-link"
+              href="https://github.com/youhaveme9/dreamseed/blob/v0.2.0/docs/native_install.md"
+              >Installation guide <span aria-hidden="true">→</span></a
+            >
+            <div class="official-note">
+              <span aria-hidden="true">✦</span>
+              <p>
+                Official verification is optional. It needs Java 21+ and your
+                acceptance of the Minecraft EULA.
+                <a
+                  href="https://github.com/youhaveme9/dreamseed#verify-before-choosing-a-world"
+                  >Setup details ↗</a
+                >
+              </p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="faq-section container" aria-labelledby="faq-title">
+        <div>
+          <p class="eyebrow">BEFORE YOU SET OFF</p>
+          <h2 id="faq-title">A few good<br />questions.</h2>
+          <a
+            class="text-link"
+            href="https://github.com/youhaveme9/dreamseed/issues"
+            >Have another one? <span aria-hidden="true">↗</span></a
+          >
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>
+              Which Minecraft versions can I use?<span aria-hidden="true"
+                >+</span
+              >
+            </summary>
+            <p>
+              Java Edition 1.21.1 and 1.21.3. Each version uses explicitly
+              selected generation rules. Bedrock and unlisted versions are
+              unsupported.
+            </p>
+          </details>
+          <details>
+            <summary>
+              Does “near the origin” mean near spawn?<span aria-hidden="true"
+                >+</span
+              >
+            </summary>
+            <p>
+              No. The origin is X 0, Z 0. Minecraft can place the actual world
+              spawn elsewhere. DreamSeed reports horizontal X/Z distances from
+              the explicit reference point. Actual spawn constraints are
+              unsupported.
+            </p>
+          </details>
+          <details>
+            <summary>
+              Where does the search run?<span aria-hidden="true">+</span>
+            </summary>
+            <p>
+              On your computer. Your AI client translates the request, then the
+              local native engine searches seeds. This GitHub Pages site
+              introduces the project; install DreamSeed to run searches.
+              DreamSeed itself makes no model API calls.
+            </p>
+          </details>
+          <details>
+            <summary>
+              What if a search finds nothing?<span aria-hidden="true">+</span>
+            </summary>
+            <p>
+              It means no match was found within that search's time or candidate
+              budget. Try a larger budget, a broader radius, or fewer mandatory
+              conditions. A bounded search cannot prove that no matching seed
+              exists.
+            </p>
+          </details>
+          <details>
+            <summary>
+              Can it guarantee the perfect valley?<span aria-hidden="true"
+                >+</span
+              >
+            </summary>
+            <p>
+              It can measure supported biomes, structures, distances, and
+              sampled terrain properties. Terrain classifiers are experimental.
+              Scenic beauty and guaranteed valley or lake topology are not
+              implemented.
+            </p>
+          </details>
+        </div>
+      </section>
+
+      <section class="closing container">
+        <div class="closing-mark" aria-hidden="true">
+          <img src="assets/seed-mark.svg" width="52" height="52" alt="" />
+        </div>
+        <h2>There’s a world out there<br />with your name on it.</h2>
+        <p>Let’s find a place worth building in.</p>
+        <a class="button button-primary" href="#get-started"
+          >Find your next world <span aria-hidden="true">↗</span></a
+        >
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-top">
+        <a class="brand" href="#"
+          ><img src="assets/seed-mark.svg" width="28" height="28" alt="" /><span
+            >DreamSeed<span class="brand-dot">.</span></span
+          ></a
+        >
+        <nav aria-label="Footer navigation">
+          <a href="https://github.com/youhaveme9/dreamseed">GitHub</a
+          ><a href="https://github.com/youhaveme9/dreamseed#readme"
+            >Documentation</a
+          ><a
+            href="https://github.com/youhaveme9/dreamseed/blob/main/docs/roadmap.md"
+            >Roadmap</a
+          ><a href="https://github.com/youhaveme9/dreamseed/blob/main/LICENSE"
+            >MIT License</a
+          >
+        </nav>
+      </div>
+      <div class="container footer-bottom">
+        <p>Built for curious players. Powered by Cubiomes.</p>
+        <p>Not affiliated with Mojang Studios or Microsoft.</p>
+      </div>
+    </footer>
+    <div
+      class="toast"
+      id="copy-status"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
+  </body>
+</html>

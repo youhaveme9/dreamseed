@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 440" width="640" height="440" role="img" aria-labelledby="title desc">
+<title id="title">Observed Minecraft surface mesh</title>
+<desc id="desc">25 official server samples, 32 interpolated triangles, no vertical exaggeration. Surface block heights range from 63 to 101.</desc>
+<style>text{font-family:ui-sans-serif,system-ui,sans-serif;fill:#5f7550}</style>
+<path d="M320.00 188.00L514.60 300.35M320.00 188.00L125.40 300.35" stroke="#bdcda7" stroke-width="1" fill="none"/>
+<path d="M271.35 216.09L465.95 328.44M368.65 216.09L174.05 328.44" stroke="#bdcda7" stroke-width="1" fill="none"/>
+<path d="M222.70 244.17L417.30 356.52M417.30 244.17L222.70 356.52" stroke="#bdcda7" stroke-width="1" fill="none"/>
+<path d="M174.05 272.26L368.65 384.61M465.95 272.26L271.35 384.61" stroke="#bdcda7" stroke-width="1" fill="none"/>
+<path d="M125.40 300.35L320.00 412.70M514.60 300.35L320.00 412.70" stroke="#bdcda7" stroke-width="1" fill="none"/>
+<polygon points="320.00,54.58 271.35,93.20 368.65,107.25" fill="hsl(88 29% 62.72%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="368.65,107.25 271.35,93.20 320.00,142.36" fill="hsl(88 29% 60.67%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="368.65,107.25 320.00,142.36 417.30,131.83" fill="hsl(88 29% 59.98%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="417.30,131.83 320.00,142.36 368.65,184.49" fill="hsl(88 29% 58.61%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="271.35,93.20 222.70,124.80 320.00,142.36" fill="hsl(88 29% 61.35%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="320.00,142.36 222.70,124.80 271.35,163.42" fill="hsl(88 29% 60.44%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="417.30,131.83 368.65,184.49 465.95,188.00" fill="hsl(88 29% 57.47%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="465.95,188.00 368.65,184.49 417.30,219.60" fill="hsl(88 29% 55.42%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="320.00,142.36 271.35,163.42 368.65,184.49" fill="hsl(88 29% 58.39%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="368.65,184.49 271.35,163.42 320.00,205.55" fill="hsl(88 29% 57.93%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="222.70,124.80 174.05,159.91 271.35,163.42" fill="hsl(88 29% 61.12%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="271.35,163.42 174.05,159.91 222.70,209.07" fill="hsl(88 29% 59.30%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="465.95,188.00 417.30,219.60 514.60,223.11" fill="hsl(88 29% 54.74%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="514.60,223.11 417.30,219.60 465.95,254.71" fill="hsl(88 29% 54.05%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="368.65,184.49 320.00,205.55 417.30,219.60" fill="hsl(88 29% 56.11%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="417.30,219.60 320.00,205.55 368.65,247.69" fill="hsl(88 29% 55.65%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="271.35,163.42 222.70,209.07 320.00,205.55" fill="hsl(88 29% 58.16%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="320.00,205.55 222.70,209.07 271.35,244.17" fill="hsl(88 29% 56.56%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="174.05,159.91 125.40,188.00 222.70,209.07" fill="hsl(88 29% 59.53%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="222.70,209.07 125.40,188.00 174.05,230.13" fill="hsl(88 29% 58.61%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="417.30,219.60 368.65,247.69 465.95,254.71" fill="hsl(88 29% 54.28%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="465.95,254.71 368.65,247.69 417.30,286.31" fill="hsl(88 29% 53.60%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="320.00,205.55 271.35,244.17 368.65,247.69" fill="hsl(88 29% 55.88%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="368.65,247.69 271.35,244.17 320.00,286.31" fill="hsl(88 29% 54.28%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="222.70,209.07 174.05,230.13 271.35,244.17" fill="hsl(88 29% 56.79%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="271.35,244.17 174.05,230.13 222.70,293.33" fill="hsl(88 29% 54.96%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="368.65,247.69 320.00,286.31 417.30,286.31" fill="hsl(88 29% 53.37%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="417.30,286.31 320.00,286.31 368.65,342.48" fill="hsl(88 29% 50.86%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="271.35,244.17 222.70,293.33 320.00,286.31" fill="hsl(88 29% 53.14%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="320.00,286.31 222.70,293.33 271.35,360.04" fill="hsl(88 29% 49.26%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="320.00,286.31 271.35,360.04 368.65,342.48" fill="hsl(88 29% 47.89%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="368.65,342.48 271.35,360.04 320.00,412.70" fill="hsl(88 29% 43.33%)" stroke="#d7e7bb" stroke-width="1.2" stroke-linejoin="round"/>
+<circle cx="320.00" cy="54.58" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 16, Z -16, surface block Y 101</title></circle>
+<circle cx="368.65" cy="107.25" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 32, Z -16, surface block Y 94</title></circle>
+<circle cx="417.30" cy="131.83" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 48, Z -16, surface block Y 95</title></circle>
+<circle cx="465.95" cy="188.00" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 64, Z -16, surface block Y 87</title></circle>
+<circle cx="514.60" cy="223.11" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 80, Z -16, surface block Y 85</title></circle>
+<circle cx="271.35" cy="93.20" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 16, Z 0, surface block Y 98</title></circle>
+<circle cx="320.00" cy="142.36" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 32, Z 0, surface block Y 92</title></circle>
+<circle cx="368.65" cy="184.49" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 48, Z 0, surface block Y 88</title></circle>
+<circle cx="417.30" cy="219.60" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 64, Z 0, surface block Y 86</title></circle>
+<circle cx="465.95" cy="254.71" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 80, Z 0, surface block Y 84</title></circle>
+<circle cx="222.70" cy="124.80" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 16, Z 16, surface block Y 97</title></circle>
+<circle cx="271.35" cy="163.42" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 32, Z 16, surface block Y 94</title></circle>
+<circle cx="320.00" cy="205.55" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 48, Z 16, surface block Y 90</title></circle>
+<circle cx="368.65" cy="247.69" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 64, Z 16, surface block Y 86</title></circle>
+<circle cx="417.30" cy="286.31" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 80, Z 16, surface block Y 83</title></circle>
+<circle cx="174.05" cy="159.91" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 16, Z 32, surface block Y 95</title></circle>
+<circle cx="222.70" cy="209.07" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 32, Z 32, surface block Y 89</title></circle>
+<circle cx="271.35" cy="244.17" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 48, Z 32, surface block Y 87</title></circle>
+<circle cx="320.00" cy="286.31" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 64, Z 32, surface block Y 83</title></circle>
+<circle cx="368.65" cy="342.48" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 80, Z 32, surface block Y 75</title></circle>
+<circle cx="125.40" cy="188.00" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 16, Z 48, surface block Y 95</title></circle>
+<circle cx="174.05" cy="230.13" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 32, Z 48, surface block Y 91</title></circle>
+<circle cx="222.70" cy="293.33" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 48, Z 48, surface block Y 81</title></circle>
+<circle cx="271.35" cy="360.04" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 64, Z 48, surface block Y 70</title></circle>
+<circle cx="320.00" cy="412.70" r="2.5" fill="#f6faec" stroke="#6f8a54" stroke-width=".7"><title>X 80, Z 48, surface block Y 63</title></circle>
+<text x="35" y="47" font-size="10" letter-spacing="1.5">OFFICIAL TERRAIN SAMPLES</text>
+<text x="35" y="69" font-size="12">Surface block Y 63 to 101</text>
+<text x="35" y="410" font-size="11">25 observed columns · 16 block spacing</text>
+<text x="605" y="410" font-size="10" text-anchor="end">No vertical exaggeration</text>
+</svg>

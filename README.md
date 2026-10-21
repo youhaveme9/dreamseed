@@ -8,7 +8,9 @@ Your AI client turns the request into search constraints. DreamSeed searches rea
 
 No model API key, local LLM, Docker, or hosted service is required by DreamSeed. Your chosen AI client has its own access requirements.
 
-[Download 0.2.0](https://github.com/youhaveme9/dreamseed/releases/tag/v0.2.0) · [Release notes](docs/releases/0.2.0.md) · [Examples](examples) · [Roadmap](docs/roadmap.md)
+[Website](https://youhaveme9.github.io/dreamseed/) · [Download 0.2.0](https://github.com/youhaveme9/dreamseed/releases/tag/v0.2.0) · [Release notes](docs/releases/0.2.0.md) · [Examples](examples) · [Roadmap](docs/roadmap.md)
+
+The website has illustrated examples, a verified seed, and setup instructions. To preview or maintain it, see the [website guide](docs/website.md).
 
 Supports **Minecraft Java Edition 1.21.1 and 1.21.3**. Bedrock and other versions are not supported.
 

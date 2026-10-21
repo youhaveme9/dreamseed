@@ -11,6 +11,7 @@ graft examples
 graft mcp
 graft scripts
 graft skills
+graft site
 graft third_party
 recursive-include tests *.py *.json *.cjs
 global-exclude *.py[cod] .DS_Store *.jar .env .env.* *.pem *.key *.p12 eula.txt mojang_eula_acceptance.json

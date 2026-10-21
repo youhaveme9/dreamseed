@@ -1,0 +1,567 @@
+{
+  "seed": "-7333811035076652275",
+  "minecraft_version": "1.21.3",
+  "edition": "Java",
+  "source": "official_minecraft_java_server",
+  "grid": {
+    "encoding": "surface_sample_rows",
+    "origin": {
+      "x": 16,
+      "z": -16
+    },
+    "width": 5,
+    "height": 5,
+    "sample_step": 16,
+    "heightmap": "MOTION_BLOCKING_NO_LEAVES",
+    "height_semantics": "first_free_y_above_heightmap_surface_not_safe_teleport",
+    "rows": [
+      [
+        {
+          "surface_y": 102,
+          "floor_y": 102,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 95,
+          "floor_y": 95,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 96,
+          "floor_y": 96,
+          "surface_block": "minecraft:oak_slab",
+          "surface_properties": {
+            "type": "bottom",
+            "waterlogged": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 88,
+          "floor_y": 88,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 86,
+          "floor_y": 86,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        }
+      ],
+      [
+        {
+          "surface_y": 99,
+          "floor_y": 99,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 93,
+          "floor_y": 93,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 89,
+          "floor_y": 89,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 87,
+          "floor_y": 87,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 85,
+          "floor_y": 85,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        }
+      ],
+      [
+        {
+          "surface_y": 98,
+          "floor_y": 98,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 95,
+          "floor_y": 95,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 91,
+          "floor_y": 91,
+          "surface_block": "minecraft:oak_slab",
+          "surface_properties": {
+            "type": "bottom",
+            "waterlogged": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 87,
+          "floor_y": 87,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 84,
+          "floor_y": 84,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        }
+      ],
+      [
+        {
+          "surface_y": 96,
+          "floor_y": 96,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 90,
+          "floor_y": 90,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 88,
+          "floor_y": 88,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 84,
+          "floor_y": 84,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 76,
+          "floor_y": 76,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        }
+      ],
+      [
+        {
+          "surface_y": 96,
+          "floor_y": 96,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 92,
+          "floor_y": 92,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 82,
+          "floor_y": 82,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 71,
+          "floor_y": 71,
+          "surface_block": "minecraft:grass_block",
+          "surface_properties": {
+            "snowy": "false"
+          },
+          "biome": "minecraft:plains",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        },
+        {
+          "surface_y": 64,
+          "floor_y": 64,
+          "surface_block": "minecraft:farmland",
+          "surface_properties": {
+            "moisture": "7"
+          },
+          "biome": "minecraft:river",
+          "is_water": false,
+          "is_lava": false,
+          "water_depth": 0
+        }
+      ]
+    ],
+    "sample_count": 25,
+    "observed_sample_count": 25,
+    "requested_chunk_count": 25,
+    "observed_chunks": [
+      {
+        "x": 1,
+        "z": -1,
+        "sha256": "2369e7d200cd5ccbfea412e7a4145b8f87054c380cc5a721b8424d8f46a5279c"
+      },
+      {
+        "x": 1,
+        "z": 0,
+        "sha256": "5367ea596d015b9af19e2a4ae7c8ffeefaf204e1b50229505ca6fbd1994237ed"
+      },
+      {
+        "x": 1,
+        "z": 1,
+        "sha256": "559d593109e8b9c80a318a34d6665488c8c5f8f6d6d1481fb1650c60ebe6b5f4"
+      },
+      {
+        "x": 1,
+        "z": 2,
+        "sha256": "fa4df9380ff6b25e1a08aca97c10219def890c1fdccb19fc03ef127b7997f113"
+      },
+      {
+        "x": 1,
+        "z": 3,
+        "sha256": "1020a2bfff946c747a1d0c65142a62a0bab472d6839699d51c30d58ac2469333"
+      },
+      {
+        "x": 2,
+        "z": -1,
+        "sha256": "0eee7b7bcbd1d7c4faa11f7288012e093bf3b02782b8b5aaf254269d4024c5e3"
+      },
+      {
+        "x": 2,
+        "z": 0,
+        "sha256": "9b74f42134008a756041b9231ec2c2406dd16b347cd0b12bd06b4fcccaab8f1e"
+      },
+      {
+        "x": 2,
+        "z": 1,
+        "sha256": "cb44a16f005d7ab18467ec431c27d5eecc9865b782147e106341b09b3b445264"
+      },
+      {
+        "x": 2,
+        "z": 2,
+        "sha256": "2f8a464d9d1fbdf3bbe505c6d90d5f4a3167f32e295573ee3a579d3b41209b3a"
+      },
+      {
+        "x": 2,
+        "z": 3,
+        "sha256": "51afa150647da00f6424b5ba65c41f98810e2e19ed6c00b1f1a9179875db4f51"
+      },
+      {
+        "x": 3,
+        "z": -1,
+        "sha256": "5b78b91d97843811a365848cbeb79ec416f647ff5e284fdf1ac0e5ec7b018e7c"
+      },
+      {
+        "x": 3,
+        "z": 0,
+        "sha256": "f52f48084aab9c0d8a9a009ab756d0628f54e533439fa5bd0c8895327edcc5ff"
+      },
+      {
+        "x": 3,
+        "z": 1,
+        "sha256": "cdeee34ae6a24ba60f622531ce06685d3e32a67ab4da9a0a2227b98c01a1e39c"
+      },
+      {
+        "x": 3,
+        "z": 2,
+        "sha256": "451a30d289f693b21a779f91452193be8f4d98ee229b39ef3d2d60aed5013a69"
+      },
+      {
+        "x": 3,
+        "z": 3,
+        "sha256": "eb8c571243f0b8e31a489aaea49b1e0305f400e94d64cb51a4d5a95c003b02a8"
+      },
+      {
+        "x": 4,
+        "z": -1,
+        "sha256": "4310d96afc41468398224b80db6599ca60c1a2df6a4d1ca398ea92bf6fb5cd38"
+      },
+      {
+        "x": 4,
+        "z": 0,
+        "sha256": "18182a22f0db9c44711b8c8376410c3e4d4f29f5a30dc7953cb6202aa4dd22d9"
+      },
+      {
+        "x": 4,
+        "z": 1,
+        "sha256": "6a0d4604e12fc42dbcefcf1a03ae6622a0765d79c4c31e06d7dca93317ef2a19"
+      },
+      {
+        "x": 4,
+        "z": 2,
+        "sha256": "09c2eefd018a00bb1fd68c36c4447466035e498a05efe13df7dadd4017b642c6"
+      },
+      {
+        "x": 4,
+        "z": 3,
+        "sha256": "68907205268d0f5cd692dacc7df53f6ff98edd7b071959beeee6e82f8ad6be8c"
+      },
+      {
+        "x": 5,
+        "z": -1,
+        "sha256": "84d05fbcdb38376b9d3b4a73e4bb558b2c5680c72972310b3a464c23fd626f49"
+      },
+      {
+        "x": 5,
+        "z": 0,
+        "sha256": "4a5970c516a847b8d38b8a8b2a6f629101c775e4c06fb1da3c7c40be93034f41"
+      },
+      {
+        "x": 5,
+        "z": 1,
+        "sha256": "366d7a02f200d18c0ee5617de60b31591b18301d57235f2c78cf4659fa7d132e"
+      },
+      {
+        "x": 5,
+        "z": 2,
+        "sha256": "7ef055cce42401a02bc9a8577a8567fdcf6302fe5a27421a47bf016fbed339a5"
+      },
+      {
+        "x": 5,
+        "z": 3,
+        "sha256": "e6ba6bfecec6458f4bbba4192f486621c8fce35f1415636799d3a790a5ff6633"
+      }
+    ],
+    "failures": [],
+    "status": "generated_terrain_confirmed"
+  },
+  "analysis": {
+    "metrics": {
+      "relief_blocks": 38,
+      "min_surface_block_y": 63,
+      "max_surface_block_y": 101,
+      "mean_surface_block_y": 87.56,
+      "mean_slope": 0.26875,
+      "max_sample_slope": 0.8125,
+      "water_fraction": 0.0,
+      "lava_fraction": 0.0,
+      "valley_fraction": 0.0,
+      "high_ground_fraction": 0.0,
+      "coverage_fraction": 1.0
+    },
+    "features": [],
+    "feature_count": 0,
+    "score": 80.83333333333333,
+    "score_breakdown": [
+      {
+        "metric": "relief_blocks",
+        "target": 40.0,
+        "tolerance": 40.0,
+        "weight": 1.0,
+        "measured_value": 38,
+        "normalized_value": 0.95
+      },
+      {
+        "metric": "water_fraction",
+        "target": 0.1,
+        "tolerance": 0.3,
+        "weight": 1.0,
+        "measured_value": 0.0,
+        "normalized_value": 0.6666666666666666
+      }
+    ]
+  },
+  "control_probes": [
+    {
+      "status": "surface_probed",
+      "coordinates": {
+        "x": 16,
+        "y": 102,
+        "z": -16
+      },
+      "is_water": false,
+      "is_lava": false,
+      "safe_teleport": true,
+      "detail": "Minecraft heightmap surface with explicit loaded chunk, clear feet and head space, and support excluding water, lava, air, and powder snow"
+    },
+    {
+      "status": "surface_probed",
+      "coordinates": {
+        "x": 48,
+        "y": 91,
+        "z": 16
+      },
+      "is_water": false,
+      "is_lava": false,
+      "safe_teleport": true,
+      "detail": "Minecraft heightmap surface with explicit loaded chunk, clear feet and head space, and support excluding water, lava, air, and powder snow"
+    },
+    {
+      "status": "surface_probed",
+      "coordinates": {
+        "x": 80,
+        "y": 64,
+        "z": 48
+      },
+      "is_water": false,
+      "is_lava": false,
+      "safe_teleport": false,
+      "detail": "Minecraft heightmap surface with explicit loaded chunk, clear feet and head space, and support excluding water, lava, air, and powder snow"
+    }
+  ],
+  "control_heights_match": true,
+  "preview": {
+    "format": "svg",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"320\" height=\"224\" viewBox=\"0 0 320 224\"><rect width=\"100%\" height=\"100%\" fill=\"#17212b\"/><text x=\"8\" y=\"20\" fill=\"white\" font-family=\"sans-serif\" font-size=\"13\">Java 1.21.3 seed -7333811035076652275</text><rect x=\"0\" y=\"32\" width=\"32\" height=\"32\" fill=\"#ebe6eb\"/><rect x=\"32\" y=\"32\" width=\"32\" height=\"32\" fill=\"#cbcecb\"/><rect x=\"64\" y=\"32\" width=\"32\" height=\"32\" fill=\"#d0d1d0\"/><rect x=\"96\" y=\"32\" width=\"32\" height=\"32\" fill=\"#acb6ac\"/><rect x=\"128\" y=\"32\" width=\"32\" height=\"32\" fill=\"#a3afa3\"/><rect x=\"0\" y=\"64\" width=\"32\" height=\"32\" fill=\"#dddbdd\"/><rect x=\"32\" y=\"64\" width=\"32\" height=\"32\" fill=\"#c2c7c2\"/><rect x=\"64\" y=\"64\" width=\"32\" height=\"32\" fill=\"#b0b9b0\"/><rect x=\"96\" y=\"64\" width=\"32\" height=\"32\" fill=\"#a7b2a7\"/><rect x=\"128\" y=\"64\" width=\"32\" height=\"32\" fill=\"#9eab9e\"/><rect x=\"0\" y=\"96\" width=\"32\" height=\"32\" fill=\"#d9d8d9\"/><rect x=\"32\" y=\"96\" width=\"32\" height=\"32\" fill=\"#cbcecb\"/><rect x=\"64\" y=\"96\" width=\"32\" height=\"32\" fill=\"#b9c0b9\"/><rect x=\"96\" y=\"96\" width=\"32\" height=\"32\" fill=\"#a7b2a7\"/><rect x=\"128\" y=\"96\" width=\"32\" height=\"32\" fill=\"#9aa89a\"/><rect x=\"0\" y=\"128\" width=\"32\" height=\"32\" fill=\"#d0d1d0\"/><rect x=\"32\" y=\"128\" width=\"32\" height=\"32\" fill=\"#b5bcb5\"/><rect x=\"64\" y=\"128\" width=\"32\" height=\"32\" fill=\"#acb6ac\"/><rect x=\"96\" y=\"128\" width=\"32\" height=\"32\" fill=\"#9aa89a\"/><rect x=\"128\" y=\"128\" width=\"32\" height=\"32\" fill=\"#768d76\"/><rect x=\"0\" y=\"160\" width=\"32\" height=\"32\" fill=\"#d0d1d0\"/><rect x=\"32\" y=\"160\" width=\"32\" height=\"32\" fill=\"#bec3be\"/><rect x=\"64\" y=\"160\" width=\"32\" height=\"32\" fill=\"#91a191\"/><rect x=\"96\" y=\"160\" width=\"32\" height=\"32\" fill=\"#607b60\"/><rect x=\"128\" y=\"160\" width=\"32\" height=\"32\" fill=\"#416441\"/><text x=\"8\" y=\"214\" fill=\"white\" font-family=\"sans-serif\" font-size=\"12\">Surface block Y 63 to 101; step 16; gray means unobserved</text></svg>",
+    "width": 320,
+    "height": 224,
+    "mesh": {
+      "format": "obj",
+      "obj": "v 0 101 0\nv 16 94 0\nv 32 95 0\nv 48 87 0\nv 64 85 0\nv 0 98 16\nv 16 92 16\nv 32 88 16\nv 48 86 16\nv 64 84 16\nv 0 97 32\nv 16 94 32\nv 32 90 32\nv 48 86 32\nv 64 83 32\nv 0 95 48\nv 16 89 48\nv 32 87 48\nv 48 83 48\nv 64 75 48\nv 0 95 64\nv 16 91 64\nv 32 81 64\nv 48 70 64\nv 64 63 64\nf 1 6 2\nf 2 6 7\nf 2 7 3\nf 3 7 8\nf 3 8 4\nf 4 8 9\nf 4 9 5\nf 5 9 10\nf 6 11 7\nf 7 11 12\nf 7 12 8\nf 8 12 13\nf 8 13 9\nf 9 13 14\nf 9 14 10\nf 10 14 15\nf 11 16 12\nf 12 16 17\nf 12 17 13\nf 13 17 18\nf 13 18 14\nf 14 18 19\nf 14 19 15\nf 15 19 20\nf 16 21 17\nf 17 21 22\nf 17 22 18\nf 18 22 23\nf 18 23 19\nf 19 23 24\nf 19 24 20\nf 20 24 25\n",
+      "origin": {
+        "x": 16,
+        "z": -16
+      },
+      "vertex_count": 25,
+      "triangle_count": 32,
+      "vertical_exaggeration": 1
+    },
+    "semantics": "Generated surface height samples, not a voxel scene. Triangles interpolate between observed columns only."
+  },
+  "elapsed_seconds": 18.05528291600058,
+  "caveats": [
+    "Heights and surface states come from full official server chunks at sampled columns. Gaps between samples are not scanned.",
+    "Heightmap Y is the first free height above its surface, not a verified safe teleport coordinate or structure entrance.",
+    "Terrain classifications are explicit heuristic candidates. Sampled enclosure cannot prove a lake has no outlet between samples.",
+    "Preference scores measure numeric target similarity, not beauty or scenic quality. Partial grids receive no preference score.",
+    "The mesh interpolates surface samples only, without caves, overhangs, structures, or complete voxel geometry.",
+    "Observed surfaces can include buildings and vegetation; this is not an unmodified terrain height function.",
+    "The area is relative to explicit world coordinates, not actual world spawn."
+  ]
+}
