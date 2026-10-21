@@ -25,7 +25,8 @@ void usage() {
               << "       dreamseed validate --config FILE\n"
               << "       dreamseed search --config FILE [--events]\n"
               << "       dreamseed inspect --config FILE\n"
-              << "       dreamseed compare --config FILE\n";
+              << "       dreamseed compare --config FILE\n"
+              << "       dreamseed filter --config FILE\n";
 }
 
 }
@@ -58,7 +59,7 @@ int main(int argc, char** argv) {
             result = dreamseed::Engine::inspect(request);
         } else if (command == "compare") {
             result = dreamseed::Engine::compare(request);
-        } else if (command == "search") {
+        } else if (command == "search" || command == "filter") {
             dreamseed::SearchControl control;
             active_control = &control;
             std::signal(SIGINT, stopSearch);
@@ -68,9 +69,9 @@ int main(int argc, char** argv) {
                     std::cout << event.dump() << '\n' << std::flush;
                 };
             }
-            result = dreamseed::Engine::search(request, &control);
+            result = command == "filter" ? dreamseed::Engine::filterPlacements(request, &control) : dreamseed::Engine::search(request, &control);
             active_control = nullptr;
-            if (events) return result["state"] == "cancelled" ? 130 : 0;
+            if (events && command == "search") return result["state"] == "cancelled" ? 130 : 0;
         } else {
             usage();
             return 2;

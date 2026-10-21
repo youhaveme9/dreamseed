@@ -3,6 +3,7 @@ import unittest
 from pydantic import ValidationError
 
 from dreamseed_mcp.schemas import (
+    CandidateVerificationRequest,
     InspectRequest,
     MinecraftVerificationRequest,
     RenderSeedMapRequest,
@@ -12,6 +13,29 @@ from dreamseed_mcp.schemas import (
 
 
 class SchemaTests(unittest.TestCase):
+    def test_numeric_and_boolean_types_are_not_silently_coerced(self):
+        base = {"minecraft_version": "1.21.3", "hard_constraints": [
+            {"id": "v", "type": "structure_within", "structure": "village", "radius": 500}
+        ]}
+        for budget in ({"workers": "4"}, {"workers": True}, {"max_seconds": "30"}):
+            with self.subTest(budget=budget), self.assertRaises(ValidationError):
+                SearchRequest.model_validate(base | {"budget": budget})
+        with self.assertRaises(ValidationError):
+            InspectRequest.model_validate({"minecraft_version": "1.21.3", "seed": "0", "include_biome_map": "true"})
+
+    def test_candidate_constraints_and_resource_limits_are_strict(self):
+        base = {
+            "minecraft_version": "1.21.1", "seed": "0",
+            "hard_constraints": [{"id": "v", "type": "structure_within", "structure": "village", "radius": 500}],
+        }
+        self.assertEqual(CandidateVerificationRequest.model_validate(base).max_seconds, 180)
+        for extra in ({"max_seconds": 301}, {"probe_surfaces": "true"}, {"seed": 0}, {"command": "stop"}):
+            with self.subTest(extra=extra), self.assertRaises(ValidationError):
+                CandidateVerificationRequest.model_validate(base | extra)
+        with self.assertRaises(ValidationError):
+            CandidateVerificationRequest.model_validate(base | {
+                "hard_constraints": base["hard_constraints"] + [{"id": "pair", "type": "max_distance", "from": "v", "to": "missing", "max_distance": 5}],
+            })
     def test_signed_seed_boundaries(self):
         self.assertEqual(parse_seed("-9223372036854775808"), -(1 << 63))
         self.assertEqual(parse_seed("9223372036854775807"), (1 << 63) - 1)
@@ -130,6 +154,28 @@ class SchemaTests(unittest.TestCase):
             "biomes": ["cherry_grove"],
         })
         self.assertEqual(request.reference_point.y, 64)
+        self.assertTrue(request.confirm_structure_starts)
+
+    def test_verification_supports_all_ten_structure_types(self):
+        names = [
+            "village", "desert_pyramid", "jungle_temple", "swamp_hut", "igloo",
+            "ocean_ruin", "shipwreck", "ocean_monument", "woodland_mansion", "pillager_outpost",
+        ]
+        request = MinecraftVerificationRequest.model_validate({
+            "minecraft_version": "1.21.1", "seed": "0", "structures": names,
+            "confirm_structure_starts": False,
+        })
+        self.assertEqual(request.structures, names)
+        self.assertFalse(request.confirm_structure_starts)
+        for changes in (
+            {"structures": ["stronghold"]}, {"structures": ["village", "village"]},
+            {"structures": names + ["village"]}, {"confirm_structure_starts": "true"},
+            {"confirm_structure_starts": 1},
+        ):
+            with self.subTest(changes=changes), self.assertRaises(ValidationError):
+                MinecraftVerificationRequest.model_validate({
+                    "minecraft_version": "1.21.1", "seed": "0", "structures": ["village"], **changes,
+                })
 
     def test_render_map_size_is_bounded(self):
         with self.assertRaises(ValidationError):

@@ -70,20 +70,34 @@ class ReleaseMergeTests(unittest.TestCase):
     def bundle(self, directory):
         root = Path(directory)
         artifacts = []
-        for name in ("dreamseed-0.1.0-linux-x86_64.tar.gz", "dreamseed_mcp-0.1.0.tar.gz", "dreamseed_mcp-0.1.0-py3-none-any.whl"):
+        for name in ("dreamseed-0.2.0-linux-x86_64.tar.gz", "dreamseed_mcp-0.2.0.tar.gz", "dreamseed_mcp-0.2.0-py3-none-any.whl"):
             path = root / name
             path.write_bytes(b"checksum test fixture")
             artifacts.append({"name": name, "sha256": digest(path), "size_bytes": path.stat().st_size})
         manifest = {
-            "project": "DreamSeed", "version": "0.1.0", "minecraft_versions": ["1.21.1"],
+            "project": "DreamSeed", "version": "0.2.0", "minecraft_versions": ["1.21.1", "1.21.3"],
             "git_revision": "a" * 40, "working_tree_dirty": False, "target": "linux-x86_64",
             "validation": {"source_rebuilt": True, "native_archive_search": True, "isolated_wheel_install": True,
-                           "mcp": {"ok": True, "tools_tested": 9, "job_recovery": True}},
+                           "mcp": {"ok": True, "tools_tested": 11, "job_recovery": True}},
             "artifacts": artifacts,
         }
         path = root / "release-manifest-linux-x86_64.json"
         path.write_text(json.dumps(manifest))
         return path, manifest
+
+    def test_merge_accepts_current_version_catalog(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path, manifest = self.bundle(directory)
+            self.assertEqual(verify_bundle(path, "a" * 40), manifest)
+
+    def test_merge_rejects_incomplete_or_unlisted_minecraft_versions(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path, manifest = self.bundle(directory)
+            for versions in (["1.21.1"], ["1.21.1", "1.21.2"], [], ["1.21.3", "1.21.1"]):
+                with self.subTest(versions=versions):
+                    path.write_text(json.dumps(manifest | {"minecraft_versions": versions}))
+                    with self.assertRaises(RuntimeError):
+                        verify_bundle(path, "a" * 40)
 
     def test_merge_rejects_checksum_mismatch(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -1,0 +1,14 @@
+{
+  "minecraft_version": "1.21.3",
+  "seed": "-3989987067671208281",
+  "reference_point": {"x": 0, "z": 0},
+  "hard_constraints": [
+    {"id": "village", "type": "structure_within", "structure": "village", "radius": 500},
+    {"id": "plains", "type": "biome_at", "biome": "plains", "y": 64}
+  ],
+  "soft_preferences": [
+    {"type": "minimize_distance", "constraint_id": "village", "weight": 1}
+  ],
+  "probe_surfaces": true,
+  "max_seconds": 120
+}

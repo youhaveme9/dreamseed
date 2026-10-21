@@ -1,4 +1,5 @@
 #include "dreamseed/engine.hpp"
+#include "dreamseed/placement.hpp"
 #include "cubiomes_compat.hpp"
 
 #include <algorithm>
@@ -25,7 +26,20 @@ struct VersionSpec {
     int cubiomes_id;
 };
 
-constexpr VersionSpec kTargetVersion{"1.21.1", MC_1_21_1};
+#include "version_catalog.hpp"
+
+const VersionSpec& versionSpec(const std::string& name) {
+    for (const auto& version : kVersions) {
+        if (name == version.name) return version;
+    }
+    throw EngineError("unsupported_version", "/minecraft_version", "Minecraft Java version is not in the supported version catalog");
+}
+
+Json versionNames() {
+    Json names = Json::array();
+    for (const auto& version : kVersions) names.push_back(version.name);
+    return names;
+}
 constexpr int kCoordinateLimit = 30000000;
 constexpr uint64_t kMaxRelationGridPointsAcrossWorkers = 4000000;
 constexpr int64_t kMaxInspectionSamplePoints = 200000;
@@ -52,6 +66,18 @@ struct SpatialMatch {
     double distance = std::numeric_limits<double>::infinity();
     Pos from{};
     Pos to{};
+};
+
+struct PlacementCache {
+    bool enabled = false;
+    bool initialized = false;
+    bool possible = false;
+    uint64_t lower48 = 0;
+    uint64_t computations = 0;
+    uint64_t reuses = 0;
+    uint64_t rejected = 0;
+    uint64_t full_evaluations = 0;
+    std::unordered_map<std::string, std::vector<Pos>> attempts;
 };
 
 struct StructureSpec {
@@ -262,9 +288,9 @@ Json coordinate(int x, int z, int y = std::numeric_limits<int>::min()) {
     return out;
 }
 
-std::vector<Pos> structureAttempts(uint64_t seed, int type, Point anchor, int radius) {
+std::vector<Pos> structureAttempts(uint64_t seed, int type, Point anchor, int radius, int minecraft_version) {
     StructureConfig config{};
-    if (!getStructureConfig(type, kTargetVersion.cubiomes_id, &config)) return {};
+    if (!getStructureConfig(type, minecraft_version, &config)) return {};
     const int span = config.regionSize * 16;
     const int min_rx = floorDiv(anchor.x - radius, span) - 1;
     const int max_rx = floorDiv(anchor.x + radius, span) + 1;
@@ -274,7 +300,7 @@ std::vector<Pos> structureAttempts(uint64_t seed, int type, Point anchor, int ra
     for (int rz = min_rz; rz <= max_rz; ++rz) {
         for (int rx = min_rx; rx <= max_rx; ++rx) {
             Pos pos{};
-            if (!getStructurePos(type, kTargetVersion.cubiomes_id, seed, rx, rz, &pos)) continue;
+            if (!getStructurePos(type, minecraft_version, seed, rx, rz, &pos)) continue;
             if (distance(pos.x, pos.z, anchor.x, anchor.z) <= radius) positions.push_back(pos);
         }
     }
@@ -296,9 +322,7 @@ Json normalizeSearch(const Json& input) {
                           "soft_preferences", "budget", "max_results"}, "");
     Json out;
     const auto version = textField(input, "minecraft_version", "/");
-    if (version != kTargetVersion.name) {
-        throw EngineError("unsupported_version", "/minecraft_version", "only Minecraft Java 1.21.1 is supported");
-    }
+    versionSpec(version);
     out["minecraft_version"] = version;
     const Point reference = point(input.value("reference_point", Json(nullptr)),
                                   "/reference_point", {0, 0});
@@ -406,10 +430,23 @@ Json normalizeSearch(const Json& input) {
     const Json raw_budget = input.value("budget", Json::object());
     if (!raw_budget.is_object()) throw EngineError("invalid_type", "/budget", "budget must be an object");
     rejectUnknown(raw_budget, {"strategy", "max_candidates", "max_seconds", "workers",
-                               "start_seed", "sample_seed"}, "/budget");
+                               "start_seed", "sample_seed", "upper_bits_per_structure_seed",
+                               "placement_cache"}, "/budget");
     const auto strategy = textField(raw_budget, "strategy", "/budget", false, "sampled");
-    if (strategy != "sampled" && strategy != "sequential") {
-        throw EngineError("unsupported_strategy", "/budget/strategy", "strategy must be sampled or sequential");
+    if (strategy != "sampled" && strategy != "sequential" && strategy != "structure48") {
+        throw EngineError("unsupported_strategy", "/budget/strategy", "strategy must be sampled, sequential, or structure48");
+    }
+    if ((strategy == "sequential" && raw_budget.contains("sample_seed")) ||
+        (strategy != "sequential" && raw_budget.contains("start_seed"))) {
+        throw EngineError("invalid_value", "/budget", "start_seed requires sequential; sample_seed requires a sampled strategy");
+    }
+    if (strategy != "structure48" && (raw_budget.contains("upper_bits_per_structure_seed") ||
+                                      raw_budget.contains("placement_cache"))) {
+        throw EngineError("invalid_value", "/budget", "batch settings require structure48 strategy");
+    }
+    if (strategy == "structure48" && std::none_of(out["hard_constraints"].begin(), out["hard_constraints"].end(),
+        [](const Json& constraint) { return constraint["type"] == "structure_within"; })) {
+        throw EngineError("invalid_value", "/budget/strategy", "structure48 requires a structure constraint");
     }
     const unsigned hardware = std::max(1u, std::thread::hardware_concurrency());
     Json budget = {
@@ -418,7 +455,14 @@ Json normalizeSearch(const Json& input) {
         {"max_seconds", number(raw_budget, "max_seconds", 0.05, 300.0, "/budget", 10.0)},
         {"workers", integer(raw_budget, "workers", 1, 64, "/budget", static_cast<int>(std::min(4u, hardware)))}
     };
-    const auto seed_key = strategy == "sampled" ? "sample_seed" : "start_seed";
+    if (strategy == "structure48") {
+        budget["upper_bits_per_structure_seed"] = integer(raw_budget, "upper_bits_per_structure_seed", 1, 65536, "/budget", 256);
+        if (raw_budget.contains("placement_cache") && !raw_budget["placement_cache"].is_boolean()) {
+            throw EngineError("invalid_type", "/budget/placement_cache", "expected a boolean");
+        }
+        budget["placement_cache"] = raw_budget.value("placement_cache", true);
+    }
+    const auto seed_key = strategy != "sequential" ? "sample_seed" : "start_seed";
     std::string seed_text = "0";
     if (raw_budget.contains(seed_key)) {
         if (!raw_budget.at(seed_key).is_string()) {
@@ -518,26 +562,57 @@ uint64_t splitmix64(uint64_t value) {
     return value ^ (value >> 31);
 }
 
+uint64_t structure48Seed(uint64_t base, uint64_t index, uint64_t batch_size) {
+    constexpr uint64_t mask = (1ULL << 48) - 1;
+    uint64_t lower = (base + index / batch_size) & mask;
+    lower ^= lower >> 21;
+    lower = (lower * 0xff51afd7ed558ccdULL) & mask;
+    lower ^= lower >> 17;
+    lower = (lower * 0xc4ceb9fe1a85ec53ULL) & mask;
+    lower ^= lower >> 25;
+    const uint64_t upper = ((splitmix64(base ^ lower) >> 48) + index % batch_size) & 0xffff;
+    return lower | (upper << 48);
+}
+
 Json evaluateSeed(const Json& request, uint64_t seed, const std::atomic_bool* cancelled,
-                  std::chrono::steady_clock::time_point deadline) {
+                  std::chrono::steady_clock::time_point deadline, PlacementCache* cache = nullptr) {
+    const auto& version = versionSpec(request["minecraft_version"].get<std::string>());
+    PlacementCache local;
+    PlacementCache& placement = cache ? *cache : local;
+    const uint64_t lower = seed & ((1ULL << 48) - 1);
+    if (placement.enabled && placement.initialized && placement.lower48 == lower) {
+        ++placement.reuses;
+    } else {
+        ++placement.computations;
+        placement.initialized = true;
+        placement.lower48 = lower;
+        placement.possible = true;
+        placement.attempts.clear();
+        for (const auto& constraint : request["hard_constraints"]) {
+            if (constraint["type"] != "structure_within") continue;
+            const Point anchor{constraint["anchor"]["x"], constraint["anchor"]["z"]};
+            auto positions = structureAttempts(lower, structureId(constraint["structure"]), anchor,
+                                               constraint["radius"], version.cubiomes_id);
+            if (positions.size() < constraint["count"].get<size_t>()) {
+                placement.possible = false;
+                break;
+            }
+            placement.attempts[constraint["id"]] = std::move(positions);
+        }
+    }
+    if (!placement.possible) {
+        ++placement.rejected;
+        return {{"matched", false}};
+    }
+    ++placement.full_evaluations;
     std::unordered_set<std::string> relation_features;
     for (const auto& constraint : request["hard_constraints"]) {
         if (constraint["type"] != "max_distance") continue;
         relation_features.insert(constraint["from"].get<std::string>());
         relation_features.insert(constraint["to"].get<std::string>());
     }
-    std::unordered_map<std::string, std::vector<Pos>> attempts;
-    for (const auto& constraint : request["hard_constraints"]) {
-        if (constraint["type"] != "structure_within") continue;
-        const Point anchor{constraint["anchor"]["x"], constraint["anchor"]["z"]};
-        auto positions = structureAttempts(seed, structureId(constraint["structure"]), anchor,
-                                           constraint["radius"]);
-        if (positions.size() < constraint["count"].get<size_t>()) return {{"matched", false}};
-        attempts[constraint["id"]] = std::move(positions);
-    }
-
     Generator generator{};
-    setupGenerator(&generator, kTargetVersion.cubiomes_id, 0);
+    setupGenerator(&generator, version.cubiomes_id, 0);
     applySeed(&generator, DIM_OVERWORLD, seed);
     std::unordered_map<std::string, std::vector<Feature>> features;
     std::unordered_map<std::string, std::vector<Pos>> relation_points;
@@ -565,7 +640,7 @@ Json evaluateSeed(const Json& request, uint64_t seed, const std::atomic_bool* ca
             const auto* spec = structureSpec(constraint["structure"]);
             const Point anchor{constraint["anchor"]["x"], constraint["anchor"]["z"]};
             size_t viable_count = 0;
-            for (const auto& pos : attempts[id]) {
+            for (const auto& pos : placement.attempts[id]) {
                 if (!isViableStructurePos(stype, &generator, pos.x, pos.z, 0)) continue;
                 if (spec->terrain_limited && !isViableStructureTerrain(stype, &generator, pos.x, pos.z)) continue;
                 ++viable_count;
@@ -668,7 +743,7 @@ Json evaluateSeed(const Json& request, uint64_t seed, const std::atomic_bool* ca
         {"matched", true},
         {"result", {
             {"seed", Engine::formatSeed(seed)},
-            {"minecraft_version", kTargetVersion.name},
+            {"minecraft_version", version.name},
             {"edition", "Java"},
             {"reference_point", request["reference_point"]},
             {"matching_feature_names", std::vector<std::string>(names.begin(), names.end())},
@@ -694,7 +769,7 @@ Json normalizeInspect(const Json& input) {
     if (!input.is_object()) throw EngineError("invalid_type", "/", "inspect request must be an object");
     rejectUnknown(input, {"minecraft_version", "seed", "area", "structures", "include_biome_map"}, "");
     const auto version = textField(input, "minecraft_version", "/");
-    if (version != kTargetVersion.name) throw EngineError("unsupported_version", "/minecraft_version", "only Minecraft Java 1.21.1 is supported");
+    versionSpec(version);
     if (!input.contains("seed") || !input["seed"].is_string()) {
         throw EngineError("invalid_type", "/seed", "seed must be a signed 64 bit decimal string");
     }
@@ -767,7 +842,7 @@ Json Engine::capabilities() {
         {"engine", "DreamSeed"},
         {"engine_version", DREAMSEED_VERSION},
         {"editions", Json::array({"Java"})},
-        {"minecraft_versions", Json::array({kTargetVersion.name})},
+        {"minecraft_versions", versionNames()},
         {"seed_encoding", "signed_64_bit_decimal_string"},
         {"structure_seed_semantics", "Placement filtering uses the lower 48 bits, then Cubiomes evaluates and returns the complete 64 bit world seed."},
         {"biome_filters", {
@@ -781,7 +856,13 @@ Json Engine::capabilities() {
         }},
         {"spatial_operations", Json::array({"distance_from_explicit_anchor", "maximum_distance_between_features"})},
         {"distance_metric", "horizontal_euclidean_blocks"},
-        {"search_strategies", Json::array({"sequential", "sampled"})},
+        {"search_strategies", Json::array({"sequential", "sampled", "structure48"})},
+        {"placement_prefilter", {
+            {"backends", {{"cpu", true}, {"metal", !metalDevice().empty()}}},
+            {"metal_device", metalDevice()}, {"cli_command", "filter"},
+            {"max_input_seeds", 100000}, {"validation_scope", "structure_placement_only"},
+            {"integrated_search_backend", false}
+        }},
         {"search_limits", {
             {"max_candidates", 10000000}, {"max_seconds", 300}, {"max_workers", 64},
             {"max_results", 100}, {"max_biome_radius", 1024}, {"max_structure_radius", 10000},
@@ -810,10 +891,10 @@ Json Engine::capabilities() {
         }},
         {"unsupported", Json::array({
             "actual world spawn constraints",
-            "terrain shape and scenic quality",
+            "terrain shape and scenic quality as native hard constraints",
             "block level structure confirmation",
             "Bedrock Edition",
-            "versions other than Java 1.21.1"
+            "unlisted Minecraft Java versions"
         })},
         {"experimental", Json::array()},
         {"cubiomes_commit", "e61f90580cbdd883214a8054670dacae655e59c0"}
@@ -822,6 +903,84 @@ Json Engine::capabilities() {
 
 Json Engine::validateSearch(const Json& request) {
     return normalizeSearch(request);
+}
+
+Json Engine::filterPlacements(const Json& input, SearchControl* supplied_control) {
+    if (!input.is_object()) throw EngineError("invalid_type", "/", "placement request must be an object");
+    rejectUnknown(input, {"minecraft_version", "reference_point", "hard_constraints", "seeds", "backend", "max_seconds"}, "");
+    const std::string backend = textField(input, "backend", "/", false, "cpu");
+    if (backend != "cpu" && backend != "metal") throw EngineError("unsupported_backend", "/backend", "backend must be cpu or metal");
+    const double max_seconds = number(input, "max_seconds", 0.05, 300, "/", 30);
+    Json criteria = input;
+    criteria.erase("seeds"); criteria.erase("backend"); criteria.erase("max_seconds");
+    criteria["budget"] = {{"strategy", "sequential"}, {"max_seconds", max_seconds}, {"workers", 1}};
+    const Json request = normalizeSearch(criteria);
+    if (!input.contains("seeds") || !input["seeds"].is_array() || input["seeds"].empty() || input["seeds"].size() > 100000) {
+        throw EngineError("out_of_range", "/seeds", "provide 1 through 100000 full world seeds");
+    }
+    std::vector<uint64_t> seeds;
+    std::unordered_set<uint64_t> unique;
+    for (const auto& seed : input["seeds"]) {
+        if (!seed.is_string()) throw EngineError("invalid_type", "/seeds", "world seeds must be decimal strings");
+        const uint64_t bits = static_cast<uint64_t>(parseSeed(seed));
+        if (!unique.insert(bits).second) throw EngineError("duplicate_seed", "/seeds", "world seed inputs must be unique");
+        seeds.push_back(bits);
+    }
+    std::vector<PlacementRegion> regions;
+    std::vector<PlacementRule> rules;
+    const auto& version = versionSpec(request["minecraft_version"]);
+    for (const auto& constraint : request["hard_constraints"]) {
+        if (constraint["type"] != "structure_within") throw EngineError("unsupported_condition", "/hard_constraints", "placement filtering accepts structure constraints only");
+        const int type = structureId(constraint["structure"]);
+        StructureConfig config{};
+        getStructureConfig(type, version.cubiomes_id, &config);
+        const int radius = constraint["radius"], ax = constraint["anchor"]["x"], az = constraint["anchor"]["z"];
+        PlacementRule rule{static_cast<int32_t>(regions.size()), 0, ax, az, radius, constraint["count"].get<int32_t>()};
+        const int span = config.regionSize * 16;
+        for (int rz = floorDiv(az - radius, span) - 1; rz <= floorDiv(az + radius, span) + 1; ++rz) {
+            for (int rx = floorDiv(ax - radius, span) - 1; rx <= floorDiv(ax + radius, span) + 1; ++rx) {
+                const uint64_t addition = static_cast<uint64_t>(rx) * 341873128712ULL +
+                                          static_cast<uint64_t>(rz) * 132897987541ULL + config.salt;
+                const int mode = type == Outpost ? 2 : type == Monument || type == Mansion ? 1 : 0;
+                regions.push_back({addition, rx, rz, config.regionSize, config.chunkRange, mode, 0});
+            }
+        }
+        rule.end = static_cast<int32_t>(regions.size());
+        rules.push_back(rule);
+    }
+    SearchControl local;
+    auto& control = supplied_control ? *supplied_control : local;
+    const auto started = std::chrono::steady_clock::now();
+    const auto deadline = started + std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<double>(max_seconds));
+    if (backend == "metal" && metalDevice().empty()) throw EngineError("backend_unavailable", "/backend", "a working Metal compute device and pipeline are required");
+    Json survivors = Json::array();
+    size_t evaluated = 0;
+    while (evaluated < seeds.size() && !control.cancelled.load() && std::chrono::steady_clock::now() < deadline) {
+        const size_t count = std::min<size_t>(backend == "metal" ? 1024 : 1, seeds.size() - evaluated);
+        std::vector<uint8_t> flags(count, 1);
+        if (backend == "metal") {
+            flags = metalPlacementFilter({seeds.begin() + evaluated, seeds.begin() + evaluated + count}, regions, rules);
+        } else {
+            for (const auto& constraint : request["hard_constraints"]) {
+                const Point anchor{constraint["anchor"]["x"], constraint["anchor"]["z"]};
+                if (structureAttempts(seeds[evaluated], structureId(constraint["structure"]), anchor,
+                    constraint["radius"], version.cubiomes_id).size() < constraint["count"].get<size_t>()) { flags[0] = 0; break; }
+            }
+        }
+        for (size_t offset = 0; offset < count; ++offset) if (flags[offset]) survivors.push_back(formatSeed(seeds[evaluated + offset]));
+        evaluated += count;
+    }
+    return {
+        {"minecraft_version", version.name}, {"backend", backend}, {"device", backend == "metal" ? metalDevice() : "cpu"},
+        {"state", control.cancelled.load() ? "cancelled" : evaluated == seeds.size() ? "completed" : "timed_out"},
+        {"coverage", evaluated == seeds.size() ? "all_provided_candidates" : "partial_provided_candidates"},
+        {"candidates_evaluated", evaluated}, {"survivor_seeds", survivors}, {"placement_survivors", survivors.size()},
+        {"elapsed_seconds", std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count()},
+        {"validation_status", "placement_only_not_verified"},
+        {"caveats", Json::array({"Only structure placement is filtered. Biomes, viability, terrain, and generated blocks remain unverified.",
+                                "Survivors are full input world seeds, not verified search results. Pass them to compare_seeds or official candidate verification.",
+                                "Metal commands complete in bounded batches; cancellation is observed between batches. No CUDA or other GPU backend is implemented."})}
+    };
 }
 
 Json Engine::search(const Json& raw_request, SearchControl* supplied_control) {
@@ -836,10 +995,13 @@ Json Engine::search(const Json& raw_request, SearchControl* supplied_control) {
     const uint64_t maximum = request["budget"]["max_candidates"];
     const int workers = request["budget"]["workers"];
     const int max_results = request["max_results"];
-    const bool sampled = request["budget"]["strategy"] == "sampled";
+    const bool batched = request["budget"]["strategy"] == "structure48";
+    const bool sampled = request["budget"]["strategy"] != "sequential";
+    const uint64_t batch_size = request["budget"].value("upper_bits_per_structure_seed", 256);
     std::atomic<uint64_t> next{0};
     std::atomic<uint64_t> evaluated{0};
     std::atomic<uint64_t> matched{0};
+    std::atomic<uint64_t> placement_computations{0}, placement_reuses{0}, placement_rejected{0}, full_evaluations{0};
     std::mutex result_mutex;
     std::mutex event_mutex;
     std::mutex progress_mutex;
@@ -853,12 +1015,15 @@ Json Engine::search(const Json& raw_request, SearchControl* supplied_control) {
     };
 
     auto worker = [&]() {
+        PlacementCache placement;
+        placement.enabled = batched && request["budget"].value("placement_cache", true);
         while (!control.cancelled.load(std::memory_order_relaxed)) {
             if (std::chrono::steady_clock::now() >= deadline) break;
             const uint64_t index = next.fetch_add(1, std::memory_order_relaxed);
             if (index >= maximum) break;
-            const uint64_t seed = sampled ? splitmix64(base + index) : base + index;
-            Json evaluation = evaluateSeed(request, seed, &control.cancelled, deadline);
+            const uint64_t seed = batched ? structure48Seed(base, index, batch_size) :
+                                  sampled ? splitmix64(base + index) : base + index;
+            Json evaluation = evaluateSeed(request, seed, &control.cancelled, deadline, &placement);
             if (evaluation.value("interrupted", false)) break;
             const uint64_t done = evaluated.fetch_add(1, std::memory_order_relaxed) + 1;
             if (evaluation.value("matched", false)) {
@@ -888,6 +1053,10 @@ Json Engine::search(const Json& raw_request, SearchControl* supplied_control) {
             if (report) emit({{"event", "progress"}, {"candidates_evaluated", done},
                               {"matches_found", matched.load(std::memory_order_relaxed)}});
         }
+        placement_computations.fetch_add(placement.computations, std::memory_order_relaxed);
+        placement_reuses.fetch_add(placement.reuses, std::memory_order_relaxed);
+        placement_rejected.fetch_add(placement.rejected, std::memory_order_relaxed);
+        full_evaluations.fetch_add(placement.full_evaluations, std::memory_order_relaxed);
     };
 
     std::vector<std::thread> threads;
@@ -899,10 +1068,11 @@ Json Engine::search(const Json& raw_request, SearchControl* supplied_control) {
     const bool timed_out = !cancelled && finished >= deadline && evaluated.load() < maximum;
     const bool completed = !cancelled && !timed_out && evaluated.load() == maximum;
     const std::string state = cancelled ? "cancelled" : timed_out ? "timed_out" : "completed";
-    const std::string coverage = sampled ? "sampled_candidates" : completed ? "exhaustive_requested_range" : "partial_sequential_range";
+    const std::string coverage = batched ? "sampled_structure_seed_batches" : sampled ? "sampled_candidates" :
+                                 completed ? "exhaustive_requested_range" : "partial_sequential_range";
     Json response = {
         {"state", state},
-        {"minecraft_version", kTargetVersion.name},
+        {"minecraft_version", request["minecraft_version"]},
         {"search_strategy", request["budget"]["strategy"]},
         {"coverage", coverage},
         {"candidates_evaluated", evaluated.load()},
@@ -910,9 +1080,16 @@ Json Engine::search(const Json& raw_request, SearchControl* supplied_control) {
         {"elapsed_seconds", std::chrono::duration<double>(finished - started).count()},
         {"results", results},
         {"result_limit", max_results},
+        {"placement_filter", {
+            {"placement_computations", placement_computations.load()},
+            {"cache_reuses", placement_reuses.load()},
+            {"candidates_rejected_before_biomes", placement_rejected.load()},
+            {"full_seed_evaluations_started", full_evaluations.load()}
+        }},
         {"limitations", Json::array()}
     };
     if (sampled) response["limitations"].push_back("Candidates were sampled deterministically and do not cover the global seed space.");
+    if (batched) response["limitations"].push_back("Structure48 groups full world seeds by shared lower 48 bits. Cohorts bias sampling toward fewer structure layouts; every accepted seed still receives full seed biome and viability checks.");
     if (timed_out) response["limitations"].push_back("The time budget ended before the candidate budget was exhausted.");
     if (timed_out && workers > 1) {
         response["limitations"].push_back("A time limited parallel search can evaluate a slightly different candidate prefix across runs. Use one worker or complete the candidate budget for exact result reproducibility.");
@@ -924,9 +1101,10 @@ Json Engine::search(const Json& raw_request, SearchControl* supplied_control) {
 
 Json Engine::inspect(const Json& raw_request) {
     const Json request = normalizeInspect(raw_request);
+    const auto& version = versionSpec(request["minecraft_version"].get<std::string>());
     const uint64_t seed = static_cast<uint64_t>(parseSeed(request["seed"]));
     Generator generator{};
-    setupGenerator(&generator, kTargetVersion.cubiomes_id, 0);
+    setupGenerator(&generator, version.cubiomes_id, 0);
     applySeed(&generator, DIM_OVERWORLD, seed);
     const Point center{request["area"]["center"]["x"], request["area"]["center"]["z"]};
     const int radius = request["area"]["radius"];
@@ -940,7 +1118,7 @@ Json Engine::inspect(const Json& raw_request) {
             const int x = center.x + dx;
             const int z = center.z + dz;
             const int id = getBiomeAt(&generator, 1, x, y, z);
-            const char* raw_name = biome2str(kTargetVersion.cubiomes_id, id);
+            const char* raw_name = biome2str(version.cubiomes_id, id);
             const std::string name = raw_name ? raw_name : "unknown";
             auto& entry = summary[name];
             if (entry.first == 0 || distance(x, z, center.x, center.z) <
@@ -964,7 +1142,7 @@ Json Engine::inspect(const Json& raw_request) {
         const auto name = name_json.get<std::string>();
         const int type = structureId(name);
         const auto* spec = structureSpec(name);
-        for (const auto& pos : structureAttempts(seed, type, center, radius)) {
+        for (const auto& pos : structureAttempts(seed, type, center, radius, version.cubiomes_id)) {
             if (!isViableStructurePos(type, &generator, pos.x, pos.z, 0)) continue;
             if (spec->terrain_limited && !isViableStructureTerrain(type, &generator, pos.x, pos.z)) continue;
             structures.push_back({{"name", name}, {"coordinates", coordinate(pos.x, pos.z)},
@@ -979,8 +1157,8 @@ Json Engine::inspect(const Json& raw_request) {
     }
     const int center_id = getBiomeAt(&generator, 1, center.x, y, center.z);
     Json response = {
-        {"seed", formatSeed(seed)}, {"minecraft_version", kTargetVersion.name}, {"edition", "Java"},
-        {"area", request["area"]}, {"center_biome", biome2str(kTargetVersion.cubiomes_id, center_id)},
+        {"seed", formatSeed(seed)}, {"minecraft_version", version.name}, {"edition", "Java"},
+        {"area", request["area"]}, {"center_biome", biome2str(version.cubiomes_id, center_id)},
         {"biome_sampling", {{"sample_count", samples}, {"sample_step", step}, {"y", y},
                             {"semantics", "exact Cubiomes lookups on a deterministic horizontal grid"}}},
         {"biome_summary", biomes}, {"structures", structures}, {"caveats", caveats}
@@ -994,7 +1172,7 @@ Json Engine::inspect(const Json& raw_request) {
             std::vector<std::string> row;
             for (int x = origin_x; x <= center.x + radius; x += step) {
                 const int id = getBiomeAt(&generator, 1, x, y, z);
-                const char* raw_name = biome2str(kTargetVersion.cubiomes_id, id);
+                const char* raw_name = biome2str(version.cubiomes_id, id);
                 std::string name = raw_name ? raw_name : "unknown";
                 unique_names.insert(name);
                 row.push_back(std::move(name));
@@ -1049,7 +1227,7 @@ Json Engine::compare(const Json& input) {
             result["meets_all_hard_constraints"] = true;
             comparisons.push_back(std::move(result));
         } else {
-            comparisons.push_back({{"seed", formatSeed(seed)}, {"minecraft_version", kTargetVersion.name},
+            comparisons.push_back({{"seed", formatSeed(seed)}, {"minecraft_version", criteria["minecraft_version"]},
                                    {"meets_all_hard_constraints", false}, {"soft_preference_score", 0},
                                    {"validation_status", "rejected_by_supported_checks"}});
         }
@@ -1061,7 +1239,7 @@ Json Engine::compare(const Json& input) {
         return betterResult(left, right);
     });
     for (size_t i = 0; i < comparisons.size(); ++i) comparisons[i]["rank"] = i + 1;
-    return {{"minecraft_version", kTargetVersion.name}, {"comparison_count", comparisons.size()},
+    return {{"minecraft_version", criteria["minecraft_version"]}, {"comparison_count", comparisons.size()},
             {"results", comparisons}};
 }
 

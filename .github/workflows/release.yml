@@ -27,6 +27,6 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: dreamseed-${{ runner.os }}-${{ runner.arch }}
-          path: dist/0.1.0/
+          path: dist/0.2.0/
           if-no-files-found: error
           retention-days: 14

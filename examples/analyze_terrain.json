@@ -1,0 +1,12 @@
+{
+  "minecraft_version": "1.21.3",
+  "seed": "-7333811035076652275",
+  "area": {"center": {"x": 48, "z": 16}, "radius": 32, "sample_step": 16},
+  "preferences": [
+    {"metric": "relief_blocks", "target": 40, "tolerance": 40, "weight": 1},
+    {"metric": "water_fraction", "target": 0.1, "tolerance": 0.3, "weight": 1}
+  ],
+  "include_preview": true,
+  "include_mesh": true,
+  "max_seconds": 120
+}

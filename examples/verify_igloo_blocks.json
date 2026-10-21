@@ -1,0 +1,9 @@
+{
+  "minecraft_version": "1.21.3",
+  "seed": "0",
+  "structures": ["igloo"],
+  "confirm_structure_starts": true,
+  "confirm_template_blocks": true,
+  "probe_surfaces": false,
+  "max_seconds": 120
+}

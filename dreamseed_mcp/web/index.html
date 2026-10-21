@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="dreamseed-session" content="DREAMSEED_SESSION_TOKEN">
+  <title>DreamSeed · World laboratory</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header><a class="brand" href="/" aria-label="DreamSeed home"><span class="seed-icon">▧</span> DreamSeed</a><span class="badge">LOCAL WORLD LABORATORY</span></header>
+  <main>
+    <section class="intro"><p class="eyebrow">REAL GENERATION. EXPLICIT EVIDENCE.</p><h1>Your next world<br><span>starts with a seed.</span></h1><p>Search, inspect, and measure Minecraft worlds on your machine. No model API, no invented coordinates.</p><p id="capabilities" role="status">Reading engine capabilities…</p></section>
+    <section class="workspace" aria-label="Seed laboratory">
+      <div class="controls"><label for="operation">Operation</label><select id="operation"><option value="search">Find seeds</option><option value="inspect">Inspect biomes and structures</option><option value="terrain">Measure terrain and preview</option><option value="candidate">Verify exact candidate</option><option value="verify">Locate with official Minecraft</option><option value="compare">Compare known seeds</option><option value="render">Render biome map</option></select><button id="example" class="quiet">Load example</button></div>
+      <div class="panels"><section class="request"><div class="panel-title"><h2>Search criteria</h2><span>JSON</span></div><label class="sr-only" for="request">Structured request</label><textarea id="request" spellcheck="false" aria-describedby="request-help"></textarea><p id="request-help">Coordinates use the world origin, not the actual world spawn. Edit the explicit version and resource budget before running.</p><div class="actions"><button id="run">Run request <span aria-hidden="true">↗</span></button><button id="cancel" class="quiet" disabled>Cancel search</button></div></section>
+      <section class="results" aria-live="polite"><div class="panel-title"><h2>Engine evidence</h2><span id="state">READY</span></div><p id="status">Results will appear after an engine request.</p><div id="seeds"></div><div id="preview"></div><canvas id="terrain-canvas" width="720" height="440" hidden aria-label="Interactive sampled terrain surface. Drag to rotate."></canvas><p id="mesh-help" hidden>Drag to rotate the sampled surface. This is not complete voxel geometry.</p><button id="download" class="quiet" hidden>Save surface OBJ</button><details><summary>Full structured output</summary><pre id="output">No request yet.</pre></details></section></div>
+    </section>
+    <section class="notes"><article><span>01 / SEARCH</span><h3>A bounded discovery process</h3><p>Completed ranges, sampled candidates, and time limits remain visible. No result does not mean no matching world exists.</p></article><article><span>02 / VERIFY</span><h3>Know what was checked</h3><p>Cubiomes predictions, official locate answers, generated starts, and actual terrain samples have distinct meanings.</p></article><article><span>03 / EXPLORE</span><h3>Measure before teleporting</h3><p>Surface height is not a safe teleport guarantee. Use official surface checks and keep creative or spectator mode available.</p></article></section>
+  </main><footer>DreamSeed · Java Edition · Local computation · No LLM keys required</footer>
+</body>
+</html>

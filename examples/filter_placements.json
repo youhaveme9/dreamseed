@@ -1,0 +1,10 @@
+{
+  "minecraft_version": "1.21.3",
+  "reference_point": {"x": 0, "z": 0},
+  "hard_constraints": [
+    {"id": "village", "type": "structure_within", "structure": "village", "radius": 500}
+  ],
+  "seeds": ["0", "2579", "-7333811035076652275", "-9223372036854775808", "9223372036854775807"],
+  "backend": "metal",
+  "max_seconds": 30
+}

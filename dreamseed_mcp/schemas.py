@@ -3,10 +3,11 @@ from __future__ import annotations
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from .versions import MinecraftVersionName
 
 
 class StrictModel(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", strict=True)
 
 
 class Coordinate(StrictModel):
@@ -83,12 +84,14 @@ class MinimizeDistance(StrictModel):
 
 
 class SearchBudget(StrictModel):
-    strategy: Literal["sequential", "sampled"] = "sampled"
+    strategy: Literal["sequential", "sampled", "structure48"] = "sampled"
     max_candidates: int = Field(default=100_000, ge=1, le=10_000_000)
     max_seconds: float = Field(default=10, ge=0.05, le=300)
     workers: int = Field(default=4, ge=1, le=64)
     start_seed: str | None = None
     sample_seed: str | None = None
+    upper_bits_per_structure_seed: int | None = Field(default=None, ge=1, le=65536)
+    placement_cache: bool | None = Field(default=None, strict=True)
 
     @field_validator("start_seed", "sample_seed")
     @classmethod
@@ -101,22 +104,24 @@ class SearchBudget(StrictModel):
     @model_validator(mode="after")
     def validate_strategy_seed(self) -> SearchBudget:
         if self.strategy == "sequential" and self.sample_seed is not None:
-            raise ValueError("sample_seed is only valid with sampled strategy")
-        if self.strategy == "sampled" and self.start_seed is not None:
+            raise ValueError("sample_seed requires a sampled strategy")
+        if self.strategy != "sequential" and self.start_seed is not None:
             raise ValueError("start_seed is only valid with sequential strategy")
+        if self.strategy != "structure48" and (
+            self.upper_bits_per_structure_seed is not None or self.placement_cache is not None
+        ):
+            raise ValueError("batch settings require structure48 strategy")
         return self
 
 
-class SearchRequest(StrictModel):
-    minecraft_version: Literal["1.21.1"]
+class SearchCriteria(StrictModel):
+    minecraft_version: MinecraftVersionName
     reference_point: Coordinate = Coordinate(x=0, z=0)
     hard_constraints: list[HardConstraint] = Field(min_length=1, max_length=16)
     soft_preferences: list[MinimizeDistance] = Field(default_factory=list, max_length=16)
-    budget: SearchBudget = SearchBudget()
-    max_results: int = Field(default=10, ge=1, le=100)
 
     @model_validator(mode="after")
-    def validate_references(self) -> SearchRequest:
+    def validate_references(self) -> SearchCriteria:
         ids = [item.id for item in self.hard_constraints]
         if len(ids) != len(set(ids)):
             raise ValueError("hard constraint ids must be unique")
@@ -147,10 +152,24 @@ class SearchRequest(StrictModel):
             if isinstance(item, BiomeWithin) and item.id in relation_ids:
                 side = (2 * item.radius) // item.sample_step + 1
                 relation_grid_bound += side * side + 1
-        if relation_grid_bound * self.budget.workers > 4_000_000:
+        workers = getattr(getattr(self, "budget", None), "workers", 1)
+        if relation_grid_bound * workers > 4_000_000:
             raise ValueError(
                 "biome distance relations exceed the grid memory limit; reduce workers or radius, or increase sample_step"
             )
+        return self
+
+
+class SearchRequest(SearchCriteria):
+    budget: SearchBudget = SearchBudget()
+    max_results: int = Field(default=10, ge=1, le=100)
+
+    @model_validator(mode="after")
+    def validate_batched_strategy(self) -> SearchRequest:
+        if self.budget.strategy == "structure48" and not any(
+            isinstance(item, StructureWithin) for item in self.hard_constraints
+        ):
+            raise ValueError("structure48 requires a structure constraint")
         return self
 
 
@@ -176,7 +195,7 @@ class InspectArea(StrictModel):
 
 
 class InspectRequest(StrictModel):
-    minecraft_version: Literal["1.21.1"]
+    minecraft_version: MinecraftVersionName
     seed: str
     area: InspectArea = InspectArea()
     structures: list[StructureName] = Field(
@@ -203,12 +222,8 @@ class InspectRequest(StrictModel):
         return self
 
 
-class CompareRequest(StrictModel):
-    minecraft_version: Literal["1.21.1"]
+class CompareRequest(SearchCriteria):
     seeds: list[str] = Field(min_length=1, max_length=64)
-    reference_point: Coordinate = Coordinate(x=0, z=0)
-    hard_constraints: list[HardConstraint] = Field(min_length=1, max_length=16)
-    soft_preferences: list[MinimizeDistance] = Field(default_factory=list, max_length=16)
 
     @field_validator("seeds")
     @classmethod
@@ -216,6 +231,18 @@ class CompareRequest(StrictModel):
         for value in values:
             parse_seed(value)
         return values
+
+
+class CandidateVerificationRequest(SearchCriteria):
+    seed: str
+    probe_surfaces: bool = Field(default=True, strict=True)
+    max_seconds: int = Field(default=180, ge=30, le=300)
+
+    @field_validator("seed")
+    @classmethod
+    def validate_seed(cls, value: str) -> str:
+        parse_seed(value)
+        return value
 
 
 def parse_seed(value: str) -> int:
@@ -297,20 +324,84 @@ class JobStorageCapabilities(StrictModel):
     active_job_restart_behavior: str
 
 
+class StructureStartCapabilities(StrictModel):
+    supported: bool
+    enabled_by_default: bool
+    requires_full_start_chunk: bool
+    requires_serialized_pieces: bool
+    max_decompressed_chunk_bytes: int
+    all_structure_blocks_checked: bool
+
+
+class StructureBlockCapabilities(StrictModel):
+    supported_structures: list[str]
+    scope: str
+    max_blocks: int
+    max_chunks: int
+    block_entities_checked: Literal[False]
+    all_structure_types_supported: Literal[False]
+
+
+class CandidateVerificationCapabilities(StrictModel):
+    supported: bool
+    tool: Literal["verify_seed_candidate"]
+    max_structure_targets: int
+    max_biome_targets: int
+    structure_counts: bool
+    spatial_relations: bool
+    exact_biome_checks: bool
+    scope: Literal["selected_candidate_witnesses"]
+
+
+class VersionVerificationAvailability(StrictModel):
+    available: bool
+    detail: str
+
+
 class AuthoritativeVerificationCapabilities(StrictModel):
     available: bool
     source: str
     minecraft_version: str
+    minecraft_versions: list[str]
+    version_availability: dict[str, VersionVerificationAvailability]
     structure_targets: list[str]
     biome_targets: list[str]
     statuses: list[str]
     surface_probe: bool
+    structure_start_inspection: StructureStartCapabilities
+    structure_block_validation: StructureBlockCapabilities
+    candidate_verification: CandidateVerificationCapabilities
     max_concurrent_per_server: int
     min_seconds: int
     max_seconds: int
     java_memory_mb: int
     setup_command: str
     detail: str
+
+
+class TerrainCapabilities(StrictModel):
+    supported: bool
+    available: bool
+    source: Literal["official_minecraft_java_server"]
+    tool: Literal["analyze_seed_terrain"]
+    max_samples: int
+    max_chunks: int
+    max_radius: int
+    min_sample_step: int
+    heightmap: str
+    classifications: list[str]
+    classification_semantics: str
+    scoring_metrics: list[str]
+    previews: list[str]
+
+
+class PlacementPrefilterCapabilities(StrictModel):
+    backends: dict[str, bool]
+    metal_device: str
+    cli_command: Literal["filter"]
+    max_input_seeds: int
+    validation_scope: Literal["structure_placement_only"]
+    integrated_search_backend: Literal[False]
 
 
 class Capabilities(StrictModel):
@@ -325,6 +416,8 @@ class Capabilities(StrictModel):
     spatial_operations: list[str]
     distance_metric: str
     search_strategies: list[str]
+    terrain_analysis: TerrainCapabilities | None = None
+    placement_prefilter: PlacementPrefilterCapabilities
     search_limits: SearchLimits
     inspection: InspectionCapabilities
     job_storage: JobStorageCapabilities
@@ -349,6 +442,13 @@ class StartResponse(StrictModel):
     error: ErrorInfo | None = None
 
 
+class PlacementFilterMetrics(StrictModel):
+    placement_computations: int
+    cache_reuses: int
+    candidates_rejected_before_biomes: int
+    full_seed_evaluations_started: int
+
+
 class StatusResponse(StrictModel):
     ok: bool
     job_id: str | None = None
@@ -360,6 +460,7 @@ class StatusResponse(StrictModel):
     candidate_budget: int | None = None
     progress_note: str | None = None
     coverage: str | None = None
+    placement_filter: PlacementFilterMetrics | None = None
     persisted: bool | None = None
     recovered: bool | None = None
     error: ErrorInfo | None = None
@@ -426,6 +527,7 @@ class ResultsResponse(StrictModel):
     results_available: int | None = None
     search_complete: bool | None = None
     coverage: str | None = None
+    placement_filter: PlacementFilterMetrics | None = None
     limitations: list[str] = Field(default_factory=list)
     persisted: bool | None = None
     recovered: bool | None = None
@@ -530,7 +632,7 @@ class ComparisonResponse(StrictModel):
 
 class RenderedSeedMap(StrictModel):
     seed: str
-    minecraft_version: Literal["1.21.1"]
+    minecraft_version: MinecraftVersionName
     format: Literal["svg"]
     width: int
     height: int
@@ -541,7 +643,7 @@ class RenderedSeedMap(StrictModel):
     caveats: list[str]
 
 
-VerificationStructureName = Literal["village", "pillager_outpost"]
+VerificationStructureName = StructureName
 
 
 class VerificationReference(StrictModel):
@@ -551,12 +653,14 @@ class VerificationReference(StrictModel):
 
 
 class MinecraftVerificationRequest(StrictModel):
-    minecraft_version: Literal["1.21.1"]
+    minecraft_version: MinecraftVersionName
     seed: str
     reference_point: VerificationReference = VerificationReference()
-    structures: list[VerificationStructureName] = Field(default_factory=list, max_length=2)
+    structures: list[VerificationStructureName] = Field(default_factory=list, max_length=10)
     biomes: list[BiomeName] = Field(default_factory=list, max_length=8)
     probe_surfaces: bool = True
+    confirm_structure_starts: bool = Field(default=True, strict=True)
+    confirm_template_blocks: bool = Field(default=False, strict=True)
     include_biome_map: bool = False
     map_area: InspectArea | None = None
     max_seconds: int = Field(default=180, ge=30, le=300)
@@ -569,6 +673,8 @@ class MinecraftVerificationRequest(StrictModel):
 
     @model_validator(mode="after")
     def validate_targets(self) -> MinecraftVerificationRequest:
+        if self.confirm_template_blocks and (self.structures != ["igloo"] or not self.confirm_structure_starts):
+            raise ValueError("template block validation currently requires only igloo and confirm_structure_starts")
         if not self.structures and not self.biomes:
             raise ValueError("at least one structure or biome target is required")
         if len(self.structures) != len(set(self.structures)):
@@ -598,6 +704,29 @@ class SurfaceProbe(StrictModel):
     detail: str
 
 
+class StructureBoundingBox(StrictModel):
+    min_x: int
+    min_y: int
+    min_z: int
+    max_x: int
+    max_y: int
+    max_z: int
+
+
+class StructureStartEvidence(StrictModel):
+    status: Literal["confirmed", "unconfirmed"]
+    chunk: Coordinate = Field(description="Start chunk X and Z coordinates, not block positions")
+    piece_count: int = Field(ge=0)
+    structure_id: str | None = None
+    data_version: int | None = None
+    chunk_status: str | None = None
+    chunk_sha256: str | None = Field(default=None, pattern="^[0-9a-f]{64}$")
+    piece_ids: list[str] | None = None
+    bounding_box: StructureBoundingBox | None = None
+    code: str | None = None
+    detail: str
+
+
 class MinecraftLocatedFeature(StrictModel):
     kind: Literal["structure", "biome"]
     name: str
@@ -605,8 +734,10 @@ class MinecraftLocatedFeature(StrictModel):
     coordinates: FeatureCoordinate
     horizontal_distance: float
     reported_distance: float | None = None
-    verification_status: Literal["minecraft_located"]
+    verification_status: Literal["minecraft_located", "generated_chunks_confirmed", "template_blocks_confirmed"]
     surface: SurfaceProbe | None = None
+    structure_start: StructureStartEvidence | None = None
+    block_verification: TemplateBlockEvidence | None = None
 
 
 class VerificationFailure(StrictModel):
@@ -614,14 +745,16 @@ class VerificationFailure(StrictModel):
     name: str
     code: str
     message: str
+    stage: Literal["locate", "structure_start", "biome_check", "template_blocks"] = "locate"
+    target_id: str | None = None
 
 
 class MinecraftVerification(StrictModel):
     seed: str
-    minecraft_version: Literal["1.21.1"]
+    minecraft_version: MinecraftVersionName
     edition: Literal["Java"]
     source: Literal["official_minecraft_java_server"]
-    status: Literal["minecraft_located", "partially_located", "not_located"]
+    status: Literal["minecraft_located", "generated_chunks_confirmed", "template_blocks_confirmed", "partially_verified", "partially_located", "not_located"]
     reference_point: VerificationReference
     locations: list[MinecraftLocatedFeature]
     failures: list[VerificationFailure]
@@ -636,6 +769,247 @@ class MinecraftVerificationResponse(StrictModel):
     error: ErrorInfo | None = None
 
 
+class TemplateBlockState(StrictModel):
+    name: str
+    properties: dict[str, str]
+
+
+class TemplateBlockMismatch(StrictModel):
+    coordinates: FeatureCoordinate
+    expected: TemplateBlockState
+    observed: TemplateBlockState
+
+
+class TemplateBlockEvidence(StrictModel):
+    status: Literal["confirmed", "mismatched", "unconfirmed"]
+    scope: Literal["all_non_marker_igloo_template_blocks"]
+    checked_blocks: int
+    matched_blocks: int
+    expected_blocks: int | None = None
+    piece_count: int | None = None
+    ignored_markers: int | None = None
+    rotations: list[str] | None = None
+    mismatch_count: int
+    mismatches: list[TemplateBlockMismatch]
+    block_entities_checked: Literal[False]
+    expected_sha256: str | None = None
+    observed_sha256: str | None = None
+    code: str | None = None
+    detail: str
+
+
+class CandidateFeatureEvidence(StrictModel):
+    target_id: str
+    constraint_ids: list[str]
+    kind: Literal["structure", "biome"]
+    name: str
+    coordinates: FeatureCoordinate
+    requested_coordinates: FeatureCoordinate
+    distance_from_reference: float = Field(ge=0)
+    verification_status: Literal["generated_chunks_confirmed", "minecraft_biome_checked", "biome_mismatch", "unconfirmed"]
+    biome_matches: bool | None = None
+    structure_start: StructureStartEvidence | None = None
+    surface: SurfaceProbe | None = None
+
+
+class CandidateConstraintCheck(StrictModel):
+    constraint_id: str
+    type: Literal["biome_at", "biome_within", "structure_within", "max_distance"]
+    status: Literal["verified", "not_verified"]
+    feature_ids: list[str]
+    required_count: int | None = None
+    verified_count: int | None = None
+    measured_distance: float | None = None
+    maximum_distance: float | None = None
+    detail: str
+
+
+class CandidateVerification(StrictModel):
+    seed: str
+    minecraft_version: MinecraftVersionName
+    edition: Literal["Java"]
+    source: Literal["official_minecraft_java_server", "cubiomes_prediction_only"]
+    status: Literal["verified", "not_verified", "prediction_rejected"]
+    prediction_matched: bool
+    all_hard_constraints_verified: bool
+    reference_point: Coordinate
+    validation_scope: Literal["selected_candidate_witnesses"]
+    features: list[CandidateFeatureEvidence]
+    constraint_checks: list[CandidateConstraintCheck]
+    spatial_checks: list[SpatialCheck]
+    score_breakdown: list[ScoreItem]
+    soft_preference_score: float | None
+    failures: list[VerificationFailure]
+    elapsed_seconds: float
+    caveats: list[str]
+
+
+class CandidateVerificationResponse(StrictModel):
+    ok: bool
+    verification: CandidateVerification | None = None
+    error: ErrorInfo | None = None
+
+
+class TerrainArea(StrictModel):
+    center: Coordinate = Coordinate(x=0, z=0)
+    radius: int = Field(default=64, ge=0, le=256, description="Half span of the square sampled area, not a circular feature distance constraint")
+    sample_step: int = Field(default=16, ge=4, le=64)
+
+    @model_validator(mode="after")
+    def validate_grid(self) -> TerrainArea:
+        from .terrain_data import MAX_TERRAIN_CHUNKS, MAX_TERRAIN_POINTS, terrain_grid
+
+        if self.sample_step % 4:
+            raise ValueError("sample_step must be a multiple of 4")
+        if abs(self.center.x) + self.radius > 30_000_000 or abs(self.center.z) + self.radius > 30_000_000:
+            raise ValueError("terrain area extends beyond the supported coordinate range")
+        _, width, grouped = terrain_grid(self.model_dump())
+        if width * width > MAX_TERRAIN_POINTS or len(grouped) > MAX_TERRAIN_CHUNKS:
+            raise ValueError("terrain area exceeds 4225 samples or 256 sampled chunks")
+        return self
+
+
+class TerrainPreference(StrictModel):
+    metric: Literal["relief_blocks", "mean_slope", "water_fraction", "valley_fraction", "high_ground_fraction"]
+    target: float = Field(ge=0, le=384)
+    tolerance: float = Field(gt=0, le=384)
+    weight: float = Field(default=1, gt=0, le=100)
+
+    @model_validator(mode="after")
+    def validate_target(self) -> TerrainPreference:
+        if self.metric.endswith("_fraction") and self.target > 1:
+            raise ValueError("fraction targets must be between 0 and 1")
+        return self
+
+
+class TerrainAnalysisRequest(StrictModel):
+    minecraft_version: MinecraftVersionName
+    seed: str
+    area: TerrainArea = TerrainArea()
+    preferences: list[TerrainPreference] = Field(default_factory=list, max_length=8)
+    include_preview: bool = Field(default=True, strict=True)
+    include_mesh: bool = Field(default=False, strict=True)
+    max_seconds: int = Field(default=180, ge=30, le=300)
+
+    @field_validator("seed")
+    @classmethod
+    def validate_seed(cls, value: str) -> str:
+        parse_seed(value)
+        return value
+
+    @model_validator(mode="after")
+    def validate_mesh(self) -> TerrainAnalysisRequest:
+        if self.include_mesh and not self.include_preview:
+            raise ValueError("include_mesh requires include_preview")
+        return self
+
+
+class TerrainSample(StrictModel):
+    surface_y: int
+    floor_y: int
+    surface_block: str
+    surface_properties: dict[str, str]
+    biome: str
+    is_water: bool
+    is_lava: bool
+    water_depth: int
+
+
+class TerrainChunkObservation(StrictModel):
+    x: int
+    z: int
+    sha256: str = Field(pattern="^[0-9a-f]{64}$")
+
+
+class TerrainChunkFailure(StrictModel):
+    chunk: Coordinate
+    code: str
+    message: str
+
+
+class TerrainGrid(StrictModel):
+    encoding: Literal["surface_sample_rows"]
+    origin: Coordinate
+    width: int
+    height: int
+    sample_step: int
+    heightmap: Literal["MOTION_BLOCKING_NO_LEAVES"]
+    height_semantics: str
+    rows: list[list[TerrainSample | None]]
+    sample_count: int
+    observed_sample_count: int
+    requested_chunk_count: int
+    observed_chunks: list[TerrainChunkObservation]
+    failures: list[TerrainChunkFailure]
+    status: Literal["generated_terrain_confirmed", "partial_terrain", "terrain_unconfirmed"]
+
+
+class TerrainCentroid(StrictModel):
+    x: float
+    z: float
+
+
+class TerrainFeature(StrictModel):
+    kind: Literal["valley_cross_section_candidate", "high_ground_component", "mountain_range_candidate", "enclosed_water_candidate", "elongated_water_candidate"]
+    classification: Literal["sampled_terrain_heuristic"]
+    centroid: TerrainCentroid
+    bounds: dict[str, int]
+    sample_count: int
+    touches_boundary: bool
+    metrics: dict[str, float]
+
+
+class TerrainScoreItem(TerrainPreference):
+    measured_value: float
+    normalized_value: float
+
+
+class TerrainAnalysis(StrictModel):
+    metrics: dict[str, float]
+    features: list[TerrainFeature]
+    feature_count: int
+    score: float | None
+    score_breakdown: list[TerrainScoreItem]
+
+
+class TerrainMesh(StrictModel):
+    format: Literal["obj"]
+    obj: str
+    origin: Coordinate
+    vertex_count: int
+    triangle_count: int
+    vertical_exaggeration: Literal[1]
+
+
+class TerrainPreview(StrictModel):
+    format: Literal["svg"]
+    svg: str
+    width: float
+    height: float
+    mesh: TerrainMesh | None = None
+    semantics: str
+
+
+class TerrainInspection(StrictModel):
+    seed: str
+    minecraft_version: MinecraftVersionName
+    edition: Literal["Java"]
+    source: Literal["official_minecraft_java_server"]
+    grid: TerrainGrid
+    analysis: TerrainAnalysis
+    control_probes: list[SurfaceProbe]
+    control_heights_match: bool | None
+    preview: TerrainPreview | None = None
+    elapsed_seconds: float
+    caveats: list[str]
+
+
+class TerrainAnalysisResponse(StrictModel):
+    ok: bool
+    terrain: TerrainInspection | None = None
+    error: ErrorInfo | None = None
+
+
 class MapMarker(StrictModel):
     kind: Literal["structure", "biome", "reference"]
     name: str = Field(min_length=1, max_length=80)
@@ -644,7 +1018,7 @@ class MapMarker(StrictModel):
 
 
 class RenderSeedMapRequest(StrictModel):
-    minecraft_version: Literal["1.21.1"]
+    minecraft_version: MinecraftVersionName
     seed: str
     area: InspectArea = InspectArea(radius=512, sample_step=32, y=96)
     structures: list[StructureName] = Field(default_factory=list, max_length=10)

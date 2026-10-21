@@ -6,6 +6,7 @@ import sys
 import tempfile
 import time
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -13,14 +14,39 @@ from dreamseed_mcp import minecraft_setup
 from dreamseed_mcp.minecraft_setup import eula_accepted, installation_status, record_acceptance
 from dreamseed_mcp.minecraft_verifier import (
     MinecraftVerifier,
+    ServerConsole,
     VerifierError,
     parse_entity_position,
     parse_locate_output,
 )
-from dreamseed_mcp.rendering import render_seed_map
+from dreamseed_mcp.rendering import marker_color, render_seed_map
+from dreamseed_mcp.versions import get_version
 
 
 class MinecraftVerifierTests(unittest.TestCase):
+    def test_minecraft_console_log_buffer_is_bounded(self):
+        class Process:
+            stdout = io.StringIO("log line\n" * 5000)
+            stdin = io.StringIO()
+
+            def poll(self):
+                return None
+
+        console = ServerConsole(Process())
+        console.reader.join(timeout=2)
+        self.assertFalse(console.reader.is_alive())
+        self.assertEqual(console.lines.qsize(), 4096)
+        self.assertTrue(console.overflowed)
+        with self.assertRaisesRegex(VerifierError, "buffered log limit"):
+            console.wait_ready(time.monotonic() + 1)
+        with self.assertRaisesRegex(VerifierError, "buffered log limit"):
+            console.command("say test", time.monotonic() + 1)
+
+    def test_generated_start_markers_have_a_distinct_validation_color(self):
+        self.assertEqual(marker_color("generated_chunks_confirmed"), "#087f8c")
+        self.assertNotEqual(marker_color("generated_chunks_confirmed"), marker_color("minecraft_located"))
+        self.assertNotEqual(marker_color("generated_chunks_confirmed"), marker_color("cubiomes_predicted"))
+
     def test_shutdown_reaps_an_active_process(self):
         verifier = MinecraftVerifier()
         process = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
@@ -70,8 +96,9 @@ class MinecraftVerifierTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             jar = Path(temporary) / "server.jar"
             with (
-                patch.object(minecraft_setup, "SERVER_SIZE", len(content)),
-                patch.object(minecraft_setup, "SERVER_SHA1", hashlib.sha1(content).hexdigest()),
+                patch.object(minecraft_setup, "get_version", return_value=replace(
+                    get_version(), server_size=len(content), server_sha1=hashlib.sha1(content).hexdigest()
+                )),
                 patch("urllib.request.urlopen", return_value=io.BytesIO(content)),
             ):
                 minecraft_setup.download_server(jar)
@@ -143,7 +170,7 @@ class MinecraftVerifierTests(unittest.TestCase):
             "max_seconds": 180,
         })
         self.assertEqual(result["source"], "official_minecraft_java_server")
-        self.assertEqual(result["status"], "minecraft_located")
+        self.assertEqual(result["status"], "generated_chunks_confirmed", result["failures"])
         locations = {item["name"]: item for item in result["locations"]}
         for name, location in locations.items():
             self.assertEqual(location["surface"]["status"], "surface_probed", name)
@@ -155,6 +182,13 @@ class MinecraftVerifierTests(unittest.TestCase):
         self.assertEqual(locations["ocean"]["surface"]["coordinates"]["y"], 63)
         self.assertTrue(locations["ocean"]["surface"]["is_water"])
         self.assertFalse(locations["ocean"]["surface"]["safe_teleport"])
+        for name in ("village", "pillager_outpost"):
+            self.assertEqual(locations[name]["verification_status"], "generated_chunks_confirmed")
+            evidence = locations[name]["structure_start"]
+            self.assertEqual(evidence["status"], "confirmed")
+            self.assertEqual(evidence["data_version"], 3955)
+            self.assertGreater(evidence["piece_count"], 0)
+        self.assertEqual(locations["cherry_grove"]["verification_status"], "minecraft_located")
 
     def test_surface_probe_waits_and_requires_positive_clearance(self):
         class DelayedConsole:
@@ -171,6 +205,8 @@ class MinecraftVerifierTests(unittest.TestCase):
                     if self.positions == 1:
                         return ["No entity was found"]
                     return ["Marker has the following entity data: [48.5d, 91.0d, 16.5d]"]
+                if "unless predicate" in command and "DREAMSEED_FLUID_" in command:
+                    return [command.rsplit("run say ", 1)[1]]
                 return []
 
         console = DelayedConsole()
@@ -179,6 +215,64 @@ class MinecraftVerifierTests(unittest.TestCase):
         self.assertEqual(console.loads, 2)
         self.assertEqual(console.positions, 2)
         self.assertFalse(result["safe_teleport"])
+
+    def test_fluid_queries_require_mutually_exclusive_controls(self):
+        class Console:
+            def __init__(self, positive, negative):
+                self.positive, self.negative = positive, negative
+
+            def command(self, command, deadline):
+                passes = self.negative if "unless predicate" in command else self.positive
+                return [command.rsplit("run say ", 1)[1]] if passes else []
+
+        for positive, negative, expected in ((True, False, True), (False, True, False), (False, False, None), (True, True, None)):
+            self.assertIs(MinecraftVerifier._fluid_present(Console(positive, negative), 0, 64, 0, "water", time.monotonic() + 1), expected)
+
+    def test_official_fluid_surface_controls_when_enabled(self):
+        if os.environ.get("DREAMSEED_RUN_MINECRAFT_INTEGRATION") != "1":
+            self.skipTest("official Minecraft integration was not requested")
+        for version in ("1.21.1", "1.21.3"):
+            self.assertTrue(installation_status(verify_hash=True, minecraft_version=version)["available"])
+            verifier = MinecraftVerifier()
+            original = verifier._probe_surface
+            controls = []
+
+            def check_controlled_columns(console, x, z, deadline):
+                cases = (
+                    ("minecraft:stone", "minecraft:stone", False, False, True),
+                    ("minecraft:seagrass", "minecraft:stone", True, False, False),
+                    ("minecraft:bubble_column", "minecraft:soul_sand", True, False, False),
+                    ("minecraft:oak_slab[waterlogged=true,type=bottom]", "minecraft:stone", True, False, False),
+                    ("minecraft:lava", "minecraft:stone", False, True, False),
+                )
+                for index, (block, support, water, lava, safe) in enumerate(cases):
+                    cx, cz = 64 + 16 * index, 64
+                    verifier._load_chunk(console, cx, cz, deadline)
+                    console.command(f"fill {cx} -64 {cz} {cx} 319 {cz} minecraft:air", deadline)
+                    console.command(f"setblock {cx} 249 {cz} {support}", deadline)
+                    console.command(f"setblock {cx} 250 {cz} {block}", deadline)
+                    token = f"DREAMSEED_CONTROL_{index}"
+                    present = console.command(f"execute if block {cx} 250 {cz} {block} run say {token}", deadline)
+                    self.assertTrue(any(token in line for line in present), (version, block, present))
+                    probed = original(console, cx, cz, deadline)
+                    self.assertEqual(probed["status"], "surface_probed", (version, block, probed))
+                    self.assertEqual(probed["coordinates"]["y"], 251)
+                    self.assertEqual(probed["is_water"], water, (version, block, probed))
+                    self.assertEqual(probed["is_lava"], lava, (version, block, probed))
+                    self.assertEqual(probed["safe_teleport"], safe, (version, block, probed))
+                    controls.append(block)
+                return original(console, x, z, deadline)
+
+            try:
+                with patch.object(verifier, "_probe_surface", side_effect=check_controlled_columns):
+                    verifier.verify({
+                        "minecraft_version": version, "seed": "0", "reference_point": {"x": 0, "y": 64, "z": 0},
+                        "structures": ["village"], "biomes": [], "confirm_structure_starts": False,
+                        "probe_surfaces": True, "max_seconds": 120,
+                    })
+                self.assertEqual(len(controls), 5)
+            finally:
+                verifier.shutdown()
 
 
 if __name__ == "__main__":

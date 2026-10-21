@@ -1,0 +1,25 @@
+{
+  "default": "1.21.1",
+  "versions": [
+    {
+      "name": "1.21.1",
+      "enabled": true,
+      "cubiomes_enum": "MC_1_21_1",
+      "data_version": 3955,
+      "java_major": 21,
+      "server_sha1": "59353fb40c36d304f2035d51e7d6e6baa98dc05c",
+      "server_size": 51627615,
+      "server_url": "https://piston-data.mojang.com/v1/objects/59353fb40c36d304f2035d51e7d6e6baa98dc05c/server.jar"
+    },
+    {
+      "name": "1.21.3",
+      "enabled": true,
+      "cubiomes_enum": "MC_1_21_3",
+      "data_version": 4082,
+      "java_major": 21,
+      "server_sha1": "45810d238246d90e811d896f87b14695b7fb6839",
+      "server_size": 56122038,
+      "server_url": "https://piston-data.mojang.com/v1/objects/45810d238246d90e811d896f87b14695b7fb6839/server.jar"
+    }
+  ]
+}

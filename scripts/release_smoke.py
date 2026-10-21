@@ -12,12 +12,13 @@ from mcp import Client, StdioServerParameters
 TOOLS = {
     "get_search_capabilities", "start_seed_search", "get_search_status",
     "get_search_results", "cancel_seed_search", "inspect_seed", "compare_seeds",
-    "verify_seed_with_minecraft", "render_seed_map",
+    "verify_seed_with_minecraft", "verify_seed_candidate", "render_seed_map", "analyze_seed_terrain",
 }
 
 
 async def main() -> None:
     import dreamseed_mcp
+    from dreamseed_mcp.versions import SUPPORTED_VERSIONS
 
     package_file = Path(dreamseed_mcp.__file__).resolve()
     if "site-packages" not in package_file.parts:
@@ -36,7 +37,10 @@ async def main() -> None:
 
         caps = (await call("get_search_capabilities", {}))["capabilities"]
         assert caps["engine_version"] == dreamseed_mcp.__version__
-        assert caps["minecraft_versions"] == ["1.21.1"]
+        assert caps["minecraft_versions"] == list(SUPPORTED_VERSIONS)
+        verification_caps = caps["authoritative_verification"]
+        assert verification_caps["structure_start_inspection"]["supported"]
+        assert set(verification_caps["structure_targets"]) == set(caps["structure_filters"]["types"])
         request = {
             "minecraft_version": "1.21.1",
             "hard_constraints": [
@@ -86,6 +90,17 @@ async def main() -> None:
         }})
         assert not verification.structured_content["ok"]
         assert verification.structured_content["error"]["code"] == "minecraft_verifier_unavailable"
+        candidate = await client.call_tool("verify_seed_candidate", {"request": {
+            "minecraft_version": "1.21.1", "seed": "2579",
+            "hard_constraints": request["hard_constraints"], "probe_surfaces": False, "max_seconds": 30,
+        }})
+        assert not candidate.structured_content["ok"]
+        assert candidate.structured_content["error"]["code"] == "minecraft_verifier_unavailable"
+        terrain = await client.call_tool("analyze_seed_terrain", {"request": {
+            "minecraft_version": "1.21.3", "seed": "2579", "area": {"radius": 0}, "max_seconds": 30,
+        }})
+        assert not terrain.structured_content["ok"]
+        assert terrain.structured_content["error"]["code"] == "minecraft_verifier_unavailable"
     async with Client(params) as client:
         recovered = await client.call_tool("get_search_results", {"job_id": job["job_id"]})
         assert recovered.structured_content["results"][0]["seed"] == "2579"

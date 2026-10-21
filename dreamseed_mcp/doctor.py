@@ -13,6 +13,7 @@ from typing import Any
 from . import __version__
 from .job_manager import default_binary, default_state_dir
 from .minecraft_setup import installation_status
+from .versions import SUPPORTED_VERSIONS
 
 
 EXPECTED_ENGINE_VERSION = __version__
@@ -46,7 +47,7 @@ def run_checks(binary: Path, state_dir: Path) -> dict[str, Any]:
                 completed.returncode == 0
                 and capabilities.get("engine") == "DreamSeed"
                 and capabilities.get("engine_version") == EXPECTED_ENGINE_VERSION
-                and capabilities.get("minecraft_versions") == ["1.21.1"]
+                and capabilities.get("minecraft_versions") == list(SUPPORTED_VERSIONS)
                 and capabilities.get("cubiomes_commit") == EXPECTED_CUBIOMES_COMMIT
             )
             detail = (

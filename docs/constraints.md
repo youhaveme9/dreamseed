@@ -1,6 +1,6 @@
 # Constraint reference
 
-Every search request uses Minecraft Java Edition version `1.21.1`. Coordinates are block coordinates. Distance calculations ignore Y and use horizontal Euclidean distance.
+Every search request explicitly selects Minecraft Java Edition `1.21.1` or `1.21.3`. Coordinates are block coordinates. Distance calculations ignore Y and use horizontal Euclidean distance. Historical release 0.1.0 only supports `1.21.1`.
 
 ## Request shape
 

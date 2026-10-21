@@ -1,0 +1,17 @@
+{
+  "source": "official_minecraft_java_server_and_pinned_igloo_templates",
+  "observed_date": "2026-10-21",
+  "scope": "all_non_marker_igloo_template_blocks",
+  "server_sha1": {
+    "1.21.1": "59353fb40c36d304f2035d51e7d6e6baa98dc05c",
+    "1.21.3": "45810d238246d90e811d896f87b14695b7fb6839"
+  },
+  "cases": [
+    {"minecraft_version": "1.21.1", "seed": "0", "x": 1568, "z": 3072, "pieces": 6, "blocks": 455, "rotation": "NONE", "sha256": "efa60f7e6b7f296d9da214d7537f61b9c37607a919f931a12ba30dda9ad53950"},
+    {"minecraft_version": "1.21.3", "seed": "0", "x": 1568, "z": 3072, "pieces": 6, "blocks": 455, "rotation": "NONE", "sha256": "efa60f7e6b7f296d9da214d7537f61b9c37607a919f931a12ba30dda9ad53950"},
+    {"minecraft_version": "1.21.3", "seed": "1", "x": -880, "z": -1024, "pieces": 1, "blocks": 152, "rotation": "NONE", "sha256": "bfd6fabc6e36729898fa0ca04eca9221e33df1d514633d848587f14093dcc7b7"},
+    {"minecraft_version": "1.21.3", "seed": "2", "x": 288, "z": -368, "pieces": 1, "blocks": 152, "rotation": "CLOCKWISE_180", "sha256": "cf703ff211493e5b5a888f8fd9144c234e11707410d80221ca0b38f91914c4a8"},
+    {"minecraft_version": "1.21.3", "seed": "3", "x": 1840, "z": 832, "pieces": 1, "blocks": 152, "rotation": "COUNTERCLOCKWISE_90", "sha256": "8b48bc8bdfca195bb4d5a15ff5729e932c6398a9e6440773239ab2cd35da9235"},
+    {"minecraft_version": "1.21.3", "seed": "8", "x": -672, "z": -912, "pieces": 10, "blocks": 515, "rotation": "CLOCKWISE_90", "sha256": "78d1e820e4d575f98fb6749cd9864c89fbddb2071b32e36ad670021aec1965a7"}
+  ]
+}

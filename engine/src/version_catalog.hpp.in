@@ -1,0 +1,3 @@
+constexpr std::array<VersionSpec, @DREAMSEED_VERSION_COUNT@> kVersions{{
+@DREAMSEED_VERSION_ROWS@
+}};

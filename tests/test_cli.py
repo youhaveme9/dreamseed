@@ -3,6 +3,7 @@ import os
 import subprocess
 import tempfile
 import unittest
+from dreamseed_mcp.versions import SUPPORTED_VERSIONS
 from pathlib import Path
 
 
@@ -14,7 +15,7 @@ class CliTests(unittest.TestCase):
     def test_capabilities_are_json(self):
         completed = subprocess.run([BINARY, "capabilities"], text=True, capture_output=True, check=True)
         data = json.loads(completed.stdout)
-        self.assertEqual(data["minecraft_versions"], ["1.21.1"])
+        self.assertEqual(data["minecraft_versions"], list(SUPPORTED_VERSIONS))
         self.assertEqual(len(data["structure_filters"]["types"]), 10)
         self.assertIn("pillager_outpost", data["structure_filters"]["types"])
         self.assertEqual(completed.stderr, "")

@@ -13,6 +13,7 @@
     "plains"
   ],
   "probe_surfaces": true,
+  "confirm_structure_starts": true,
   "include_biome_map": true,
   "map_area": {
     "center": {

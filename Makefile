@@ -1,9 +1,9 @@
-.PHONY: configure build test clean venv mcp-test benchmark release-check release-candidate package-check sanitize doctor minecraft-check release release-bundle
+.PHONY: configure build test clean venv test-deps mcp-test benchmark release-check release-candidate package-check sanitize doctor minecraft-check release release-bundle
 
 BUILD_DIR ?= build
 PYTHON ?= python3
 CMAKE_FLAGS ?=
-RELEASE_DIR ?= dist/0.1.0
+RELEASE_DIR ?= dist/0.2.0
 
 configure:
 	cmake -S . -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON $(CMAKE_FLAGS)
@@ -11,7 +11,7 @@ configure:
 build: configure
 	cmake --build $(BUILD_DIR) --parallel
 
-test: build venv
+test: build test-deps
 	ctest --test-dir $(BUILD_DIR) --output-on-failure
 	DREAMSEED_BINARY="$(CURDIR)/$(BUILD_DIR)/dreamseed" .venv/bin/python -m unittest discover -s tests -v
 
@@ -19,7 +19,10 @@ venv:
 	$(PYTHON) -m venv .venv
 	.venv/bin/python -m pip install -e '.[dev]'
 
-mcp-test: build venv
+test-deps: venv
+	.venv/bin/python -m pip install -e '.[dev,http]'
+
+mcp-test: build test-deps
 	DREAMSEED_BINARY=$(CURDIR)/$(BUILD_DIR)/dreamseed .venv/bin/python -m unittest discover -s tests -v
 
 benchmark: build

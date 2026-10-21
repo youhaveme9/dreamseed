@@ -13,8 +13,11 @@ from pydantic import ValidationError
 
 from .job_manager import JobError, JobManager
 from .minecraft_verifier import VerifierError
+from .versions import SUPPORTED_VERSIONS
 from .schemas import (
     CancelResponse,
+    CandidateVerificationRequest,
+    CandidateVerificationResponse,
     CapabilitiesResponse,
     CompareRequest,
     ComparisonResponse,
@@ -29,13 +32,15 @@ from .schemas import (
     SearchRequest,
     StartResponse,
     StatusResponse,
+    TerrainAnalysisRequest,
+    TerrainAnalysisResponse,
 )
 
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
 server = MCPServer(
     "DreamSeed",
-    instructions="Search real Minecraft Java 1.21.1 seeds with a local Cubiomes engine. Seeds are decimal strings. Coordinates are origin relative unless explicitly supplied.",
+    instructions=f"Search real Minecraft Java seeds for {', '.join(SUPPORTED_VERSIONS)} with a local Cubiomes engine. Seeds are decimal strings. Coordinates are origin relative unless explicitly supplied.",
 )
 manager = JobManager()
 atexit.register(manager.shutdown)
@@ -45,7 +50,7 @@ def error_response(error: Exception) -> dict[str, Any]:
     if isinstance(error, (JobError, VerifierError)):
         return error.response()
     if isinstance(error, ValidationError):
-        return {"ok": False, "error": {"code": "validation_error", "message": "request validation failed", "details": error.errors(include_url=False)}}
+        return {"ok": False, "error": {"code": "validation_error", "message": "request validation failed", "details": json.loads(error.json(include_url=False))}}
     logging.exception("tool failed")
     return {"ok": False, "error": {"code": "internal_error", "message": str(error)}}
 
@@ -115,7 +120,7 @@ def compare_seeds(request: CompareRequest) -> ComparisonResponse:
 
 @server.tool()
 def verify_seed_with_minecraft(request: MinecraftVerificationRequest) -> MinecraftVerificationResponse:
-    """Use the official local Minecraft Java server to locate targets and probe surfaces."""
+    """Locate targets, confirm generated structure starts, and probe surfaces with official Minecraft."""
     try:
         verification = manager.verify_with_minecraft(request.model_dump(exclude_none=True))
         response = MinecraftVerificationResponse(ok=True, verification=verification)
@@ -146,6 +151,36 @@ def verify_seed_with_minecraft(request: MinecraftVerificationRequest) -> Minecra
 
 
 @server.tool()
+def verify_seed_candidate(request: CandidateVerificationRequest) -> CandidateVerificationResponse:
+    """Verify selected candidate chunks and exact biomes, then recheck counts, distances, and scoring."""
+    try:
+        verification = manager.verify_candidate(request.model_dump(by_alias=True, exclude_none=True))
+        return CandidateVerificationResponse(ok=True, verification=verification)
+    except Exception as error:
+        return CandidateVerificationResponse.model_validate(error_response(error))
+
+
+@server.tool()
+def analyze_seed_terrain(request: TerrainAnalysisRequest) -> TerrainAnalysisResponse:
+    """Measure generated heights and surfaces, evaluate terrain heuristics, and render factual previews."""
+    try:
+        terrain = manager.analyze_terrain(request.model_dump(exclude_none=True))
+        response = TerrainAnalysisResponse(ok=True, terrain=terrain)
+        preview = terrain.get("preview")
+        if preview is None:
+            return response
+        return CallToolResult(
+            content=[
+                TextContent(type="text", text=json.dumps({"ok": True, "seed": terrain["seed"], "status": terrain["grid"]["status"], "metrics": terrain["analysis"]["metrics"], "caveats": terrain["caveats"]})),
+                ImageContent(type="image", data=base64.b64encode(preview["svg"].encode("utf-8")).decode("ascii"), mimeType="image/svg+xml"),
+            ],
+            structuredContent=response.model_dump(mode="json"),
+        )
+    except Exception as error:
+        return TerrainAnalysisResponse.model_validate(error_response(error))
+
+
+@server.tool()
 def render_seed_map(request: RenderSeedMapRequest) -> RenderSeedMapResponse:
     """Render a bounded sampled biome map as static SVG with status coded markers."""
     try:
@@ -173,6 +208,13 @@ def render_seed_map(request: RenderSeedMapRequest) -> RenderSeedMapResponse:
         )
     except Exception as error:
         return RenderSeedMapResponse.model_validate(error_response(error))
+
+
+TOOL_FUNCTIONS = (
+    get_search_capabilities, start_seed_search, get_search_status, get_search_results,
+    cancel_seed_search, inspect_seed, compare_seeds, verify_seed_with_minecraft,
+    verify_seed_candidate, analyze_seed_terrain, render_seed_map,
+)
 
 
 def main() -> None:

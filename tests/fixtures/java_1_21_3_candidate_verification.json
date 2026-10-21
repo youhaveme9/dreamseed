@@ -1,0 +1,19 @@
+{
+  "minecraft_version": "1.21.3",
+  "seed": "-7333811035076652275",
+  "source": "official_minecraft_java_server",
+  "server_sha1": "45810d238246d90e811d896f87b14695b7fb6839",
+  "request_example": "examples/verify_seed_candidate.json",
+  "recorded_on": "2026-10-21",
+  "features": [
+    {"kind": "biome", "name": "plains", "x": 0, "y": 64, "z": 0},
+    {"kind": "structure", "name": "village", "x": 48, "z": 16, "piece_count": 123},
+    {"kind": "structure", "name": "village", "x": 208, "z": -784, "piece_count": 190},
+    {"kind": "structure", "name": "pillager_outpost", "x": 256, "z": 256, "piece_count": 12},
+    {"kind": "biome", "name": "cherry_grove", "x": -96, "y": 96, "z": 160},
+    {"kind": "structure", "name": "village", "x": -960, "z": 80, "piece_count": 122},
+    {"kind": "structure", "name": "pillager_outpost", "x": -784, "z": 16, "piece_count": 11}
+  ],
+  "pair_distances": {"pair": 187.275198571514, "cherry_pair": 203.64675298172568},
+  "soft_preference_score": 87.04883986736604
+}

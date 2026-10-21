@@ -37,6 +37,14 @@ def biome_color(name: str) -> str:
     return f"#{80 + digest[0] % 120:02x}{80 + digest[1] % 120:02x}{80 + digest[2] % 120:02x}"
 
 
+def marker_color(status: str) -> str:
+    if status in {"generated_chunks_confirmed", "template_blocks_confirmed"}:
+        return "#087f8c"
+    if status == "minecraft_located":
+        return "#18a558"
+    return "#64748b" if status == "client_supplied" else "#f59e0b"
+
+
 def render_seed_map(
     inspection: dict[str, Any], markers: list[dict[str, Any]], title: str | None = None
 ) -> dict[str, Any]:
@@ -106,7 +114,7 @@ def render_seed_map(
         x = left + column * cell + cell / 2
         y = top + row * cell + cell / 2
         status = marker["validation_status"]
-        fill = "#18a558" if status == "minecraft_located" else "#64748b" if status == "client_supplied" else "#f59e0b"
+        fill = marker_color(status)
         parts.append(
             f'<circle cx="{x:.2f}" cy="{y:.2f}" r="5" fill="{fill}" stroke="#fff" stroke-width="2">'
             f'<title>{escape(marker["name"])} at {coordinate["x"]}, {coordinate["z"]}: {escape(marker["validation_status"])}</title></circle>'
@@ -126,7 +134,7 @@ def render_seed_map(
         for marker in visible_markers:
             coordinate = marker["coordinates"]
             status = marker["validation_status"]
-            fill = "#18a558" if status == "minecraft_located" else "#64748b" if status == "client_supplied" else "#f59e0b"
+            fill = marker_color(status)
             label = f"{marker['name']}  {coordinate['x']}, {coordinate['z']}"
             parts.append(f'<circle cx="{legend_x + 6}" cy="{legend_y - 4}" r="5" fill="{fill}"/>')
             parts.append(f'<text x="{legend_x + 18}" y="{legend_y}" class="label">{escape(label)}</text>')
@@ -147,7 +155,7 @@ def render_seed_map(
         "semantics": "Sampled Cubiomes biome map with status coded markers",
         "caveats": [
             "This is a sampled biome map, not a block terrain render.",
-            "Orange markers are Cubiomes predictions. Gray markers are client supplied. Only the official verifier can create green markers.",
+            "Orange markers are Cubiomes predictions. Gray markers are client supplied. Green markers are official locate results. Teal markers have confirmed generated structure start data.",
             "The map center is the explicit area center, not actual world spawn.",
         ],
     }

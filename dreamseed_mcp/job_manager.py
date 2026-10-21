@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .candidate_verification import CandidatePlanError, build_candidate_targets, recheck_candidate
 from .minecraft_verifier import MinecraftVerifier
 from .rendering import render_seed_map
 
@@ -58,6 +59,13 @@ class JobError(RuntimeError):
         return {"ok": False, "error": {"code": self.code, "message": str(self), "details": self.details}}
 
 
+def interface_state_dir(interface: str) -> Path:
+    if interface not in {"web", "http"}:
+        raise ValueError("interface must be web or http")
+    configured = os.environ.get("DREAMSEED_STATE_DIR")
+    return Path(configured).expanduser().resolve() if configured else default_state_dir().parent / f"{interface}-jobs"
+
+
 @dataclass
 class SearchJob:
     job_id: str
@@ -87,6 +95,7 @@ class JobManager:
         self.max_jobs = max_jobs
         self.jobs: dict[str, SearchJob] = {}
         self.lock = threading.RLock()
+        self.closed = False
         self.state_dir = Path(state_dir).resolve() if state_dir is not None else default_state_dir()
         self.state_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
         self.verifier = MinecraftVerifier()
@@ -148,7 +157,7 @@ class JobManager:
                 if not isinstance(data["request"], dict) or not isinstance(data["results"], list):
                     raise ValueError("invalid persisted job data")
                 budget = data["request"].get("budget")
-                if not isinstance(budget, dict) or budget.get("strategy") not in {"sampled", "sequential"}:
+                if not isinstance(budget, dict) or budget.get("strategy") not in {"sampled", "sequential", "structure48"}:
                     raise ValueError("invalid persisted request")
                 if not isinstance(budget.get("max_candidates"), int) or budget["max_candidates"] < 1:
                     raise ValueError("invalid persisted candidate budget")
@@ -237,8 +246,24 @@ class JobManager:
         verifier_capabilities = self.verifier.capabilities()
         verifier_capabilities["biome_targets"] = capabilities["biome_filters"]["biomes"]
         capabilities["authoritative_verification"] = verifier_capabilities
+        capabilities["unsupported"] = [
+            "block level confirmation for structures other than supported igloo templates"
+            if item == "block level structure confirmation" else item
+            for item in capabilities["unsupported"]
+        ]
+        capabilities["terrain_analysis"] = {
+            "supported": True, "available": verifier_capabilities["available"],
+            "source": "official_minecraft_java_server", "tool": "analyze_seed_terrain",
+            "max_samples": 4225, "max_chunks": 256, "max_radius": 256, "min_sample_step": 4,
+            "heightmap": "MOTION_BLOCKING_NO_LEAVES",
+            "classifications": ["valley_cross_section_candidate", "high_ground_component", "mountain_range_candidate",
+                                "enclosed_water_candidate", "elongated_water_candidate"],
+            "classification_semantics": "Explicit sampled terrain heuristics, not semantic proof of valleys, ranges, lakes, or rivers",
+            "scoring_metrics": ["relief_blocks", "mean_slope", "water_fraction", "valley_fraction", "high_ground_fraction"],
+            "previews": ["svg_heightmap", "obj_surface_mesh"],
+        }
         capabilities["experimental"].extend([
-            "official Minecraft Java server locate verification and surface probing",
+            "official Minecraft Java server locate verification, generated structure starts, and surface probing",
             "static SVG rendering of sampled biome maps",
         ])
         return capabilities
@@ -248,6 +273,100 @@ class JobManager:
 
     def compare(self, request: dict[str, Any]) -> dict[str, Any]:
         return self._run_once("compare", request, 300)
+
+    def analyze_terrain(self, request: dict[str, Any]) -> dict[str, Any]:
+        from .schemas import TerrainAnalysisRequest
+        from .terrain_analysis import analyze_grid
+        from .terrain_rendering import render_terrain
+
+        request = TerrainAnalysisRequest.model_validate(request).model_dump(exclude_none=True)
+        center = request["area"]["center"]
+        checked = self.verifier.verify({
+            "minecraft_version": request["minecraft_version"], "seed": request["seed"],
+            "reference_point": {**center, "y": 64}, "structures": [], "biomes": [],
+            "confirm_structure_starts": False, "probe_surfaces": False, "max_seconds": request["max_seconds"],
+        }, terrain_area=request["area"])
+        grid = checked["terrain"]
+        controls_match = []
+        for probe in checked["terrain_controls"]:
+            if probe["status"] != "surface_probed":
+                continue
+            coordinate = probe["coordinates"]
+            row = (coordinate["z"] - grid["origin"]["z"]) // grid["sample_step"]
+            column = (coordinate["x"] - grid["origin"]["x"]) // grid["sample_step"]
+            cell = grid["rows"][row][column]
+            if cell is not None:
+                controls_match.append(cell["surface_y"] == coordinate["y"])
+        if controls_match and not all(controls_match):
+            raise JobError("terrain_control_mismatch", "saved heights disagree with independent Minecraft surface commands")
+        return {
+            "seed": request["seed"], "minecraft_version": request["minecraft_version"], "edition": "Java",
+            "source": "official_minecraft_java_server", "grid": grid,
+            "analysis": analyze_grid(grid, request["preferences"]),
+            "control_probes": checked["terrain_controls"],
+            "control_heights_match": True if controls_match and len(controls_match) == len(checked["terrain_controls"]) else None,
+            "preview": render_terrain(grid, request["seed"], request["minecraft_version"], request["include_mesh"]) if request["include_preview"] else None,
+            "elapsed_seconds": checked["elapsed_seconds"],
+            "caveats": [
+                "Heights and surface states come from full official server chunks at sampled columns. Gaps between samples are not scanned.",
+                "Heightmap Y is the first free height above its surface, not a verified safe teleport coordinate or structure entrance.",
+                "Terrain classifications are explicit heuristic candidates. Sampled enclosure cannot prove a lake has no outlet between samples.",
+                "Preference scores measure numeric target similarity, not beauty or scenic quality. Partial grids receive no preference score.",
+                "The mesh interpolates surface samples only, without caves, overhangs, structures, or complete voxel geometry.",
+                "Observed surfaces can include buildings and vegetation; this is not an unmodified terrain height function.",
+                "The area is relative to explicit world coordinates, not actual world spawn.",
+            ],
+        }
+
+    def verify_candidate(self, request: dict[str, Any]) -> dict[str, Any]:
+        started = time.monotonic()
+        deadline = started + request["max_seconds"]
+        criteria = {key: request[key] for key in ("minecraft_version", "reference_point", "hard_constraints", "soft_preferences")}
+        normalized = self._run_once("validate", {
+            **criteria, "budget": {"strategy": "sequential", "start_seed": request["seed"], "max_candidates": 1,
+                                   "max_seconds": request["max_seconds"], "workers": 1}, "max_results": 1,
+        }, min(10, request["max_seconds"]))["normalized_request"]
+        prediction = self._run_once("compare", {**criteria, "seeds": [request["seed"]]}, max(0.01, deadline - time.monotonic()))["results"][0]
+        result = {
+            "seed": request["seed"], "minecraft_version": request["minecraft_version"], "edition": "Java",
+            "source": "cubiomes_prediction_only", "reference_point": normalized["reference_point"],
+            "validation_scope": "selected_candidate_witnesses", "prediction_matched": prediction["meets_all_hard_constraints"],
+            "features": [], "failures": [], "constraint_checks": [], "spatial_checks": [], "score_breakdown": [],
+            "soft_preference_score": None, "all_hard_constraints_verified": False,
+            "caveats": [
+                "Verification covers selected candidate witnesses, not an exhaustive scan of the world or every matching feature.",
+                "A failed witness does not prove that no other matching feature exists for this seed.",
+                "Structure distances use confirmed start chunk block origins, not building entrances. Biomes are checked at the reported X, Y, and Z.",
+                "All distances are horizontal Euclidean blocks from explicit anchors, not actual world spawn.",
+                "Structure start confirmation does not inspect every structure block. Surface safety is separate from hard constraint verification.",
+            ],
+        }
+        if not prediction["meets_all_hard_constraints"]:
+            result.update({"status": "prediction_rejected", "elapsed_seconds": time.monotonic() - started})
+            result["caveats"].append("The bounded Cubiomes checks rejected this candidate. Minecraft was not started and no authoritative verdict was made.")
+            return result
+        try:
+            targets = build_candidate_targets(normalized, prediction)
+        except CandidatePlanError as error:
+            raise JobError("candidate_verification_limit", str(error)) from error
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise JobError("verification_timeout", "candidate preparation exhausted the request time limit")
+        reference = normalized["reference_point"]
+        official = self.verifier.verify({
+            "seed": request["seed"], "minecraft_version": request["minecraft_version"],
+            "reference_point": {**reference, "y": 64},
+            "structures": sorted({target["name"] for target in targets if target["kind"] == "structure"}),
+            "biomes": [], "confirm_structure_starts": True,
+            "probe_surfaces": request["probe_surfaces"], "max_seconds": remaining,
+        }, targets=targets)
+        for feature in official["locations"]:
+            coordinate = feature["coordinates"]
+            feature["distance_from_reference"] = math.hypot(coordinate["x"] - reference["x"], coordinate["z"] - reference["z"])
+        result.update(recheck_candidate(normalized, official["locations"]))
+        result.update({"source": "official_minecraft_java_server", "features": official["locations"],
+                       "failures": official["failures"], "elapsed_seconds": time.monotonic() - started})
+        return result
 
     def verify_with_minecraft(self, request: dict[str, Any]) -> dict[str, Any]:
         verification = self.verifier.verify(request)
@@ -271,7 +390,7 @@ class JobManager:
                     "kind": location["kind"],
                     "name": location["name"],
                     "coordinates": location["coordinates"],
-                    "validation_status": "minecraft_located",
+                    "validation_status": location["verification_status"],
                 }
                 for location in verification["locations"]
             ]
@@ -293,6 +412,8 @@ class JobManager:
     def start(self, request: dict[str, Any]) -> dict[str, Any]:
         validated = self._run_once("validate", request, 10)["normalized_request"]
         with self.lock:
+            if self.closed:
+                raise JobError("manager_closed", "job manager has shut down")
             active = sum(job.state in ACTIVE_STATES for job in self.jobs.values())
             if active >= self.max_concurrent:
                 raise JobError("job_limit", f"at most {self.max_concurrent} searches may run concurrently")
@@ -478,6 +599,8 @@ class JobManager:
                 response["error"] = job.error
             if job.summary is not None:
                 response["coverage"] = job.summary["coverage"]
+                if "placement_filter" in job.summary:
+                    response["placement_filter"] = job.summary["placement_filter"]
             return response
 
     def results(self, job_id: str) -> dict[str, Any]:
@@ -498,6 +621,8 @@ class JobManager:
             if job.summary is not None:
                 response["coverage"] = job.summary["coverage"]
                 response["limitations"] = job.summary["limitations"]
+                if "placement_filter" in job.summary:
+                    response["placement_filter"] = job.summary["placement_filter"]
             elif job.state in {"queued", "running", "cancelling"}:
                 response["limitations"] = ["The search is still running, so rankings and available results can change."]
             elif job.state == "interrupted":
@@ -536,6 +661,8 @@ class JobManager:
             return {"ok": True, "job_id": job.job_id, "state": job.state, "already_finished": False}
 
     def shutdown(self) -> None:
+        with self.lock:
+            self.closed = True
         self.verifier.shutdown()
         with self.lock:
             job_ids = [
@@ -544,3 +671,8 @@ class JobManager:
             ]
         for job_id in job_ids:
             self.cancel(job_id)
+        with self.lock:
+            threads = [job.thread for job in self.jobs.values() if job.thread is not None]
+        for thread in threads:
+            if thread is not threading.current_thread():
+                thread.join(timeout=5)

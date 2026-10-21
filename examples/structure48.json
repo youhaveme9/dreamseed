@@ -1,0 +1,20 @@
+{
+  "minecraft_version": "1.21.3",
+  "hard_constraints": [
+    {"id": "village", "type": "structure_within", "structure": "village", "radius": 500},
+    {"id": "plains", "type": "biome_at", "biome": "plains", "y": 64}
+  ],
+  "soft_preferences": [
+    {"type": "minimize_distance", "constraint_id": "village", "weight": 1}
+  ],
+  "budget": {
+    "strategy": "structure48",
+    "sample_seed": "20261020",
+    "upper_bits_per_structure_seed": 256,
+    "placement_cache": true,
+    "max_candidates": 50000,
+    "max_seconds": 30,
+    "workers": 4
+  },
+  "max_results": 3
+}

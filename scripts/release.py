@@ -50,7 +50,8 @@ def check_metadata(build_dir: Path) -> tuple[str, dict]:
     versions = {version, cmake.group(1) if cmake else None, plugin["version"], python_version, capabilities["engine_version"]}
     if len(versions) != 1:
         raise RuntimeError(f"release version mismatch: {versions}")
-    if capabilities["minecraft_versions"] != ["1.21.1"]:
+    catalog = json.loads((ROOT / "dreamseed_mcp/minecraft_versions.json").read_text())
+    if capabilities["minecraft_versions"] != [item["name"] for item in catalog["versions"] if item["enabled"]]:
         raise RuntimeError("unexpected Minecraft version")
     if not (ROOT / "docs" / "releases" / f"{version}.md").is_file():
         raise RuntimeError("release notes are missing")
@@ -124,6 +125,10 @@ def check_wheel(wheel: Path) -> None:
         for suffix in ("licenses/LICENSE", "licenses/THIRD_PARTY_NOTICES.md", "entry_points.txt"):
             if not any(name.endswith(suffix) for name in names):
                 raise RuntimeError(f"wheel is missing {suffix}")
+        for name in ("minecraft_versions.json", "terrain_data.py", "terrain_analysis.py", "structure_blocks.py",
+                     "http_server.py", "http_auth.py", "web_server.py", "web/index.html", "web/app.js", "web/style.css"):
+            if f"dreamseed_mcp/{name}" not in names:
+                raise RuntimeError(f"wheel is missing dreamseed_mcp/{name}")
 
 
 def check_installations(source: Path, wheel: Path, native: Path, temporary: Path, capabilities: dict) -> dict:
@@ -199,6 +204,22 @@ def main() -> None:
             "third_party/cubiomes/generator.c", "third_party/cubiomes/LICENSE",
             ".claude-plugin/plugin.json", ".mcp.json", "skills/find-minecraft-seed/SKILL.md",
             "scripts/release.py", "scripts/release_smoke.py", "scripts/merge_release.py", f"docs/releases/{version}.md",
+            "dreamseed_mcp/minecraft_chunks.py", "dreamseed_mcp/minecraft_registry.py",
+            "tests/fixtures/java_1_21_1_seed_0_structures.json",
+            "dreamseed_mcp/candidate_verification.py", "examples/verify_seed_candidate.json",
+            "dreamseed_mcp/minecraft_versions.json", "dreamseed_mcp/versions.py", "engine/src/version_catalog.hpp.in",
+            "tests/fixtures/java_1_21_3_seed_0_structures.json", "tests/fixtures/java_1_21_3_candidate_verification.json",
+            "tests/test_versions.py", "tests/test_structure48.py", "docs/structure48.md", "scripts/benchmark_structure48.py",
+            "dreamseed_mcp/structure_blocks.py", "tests/fixtures/igloo_template_blocks.json", "examples/verify_igloo_blocks.json",
+            "docs/structure_blocks.md", "tests/test_structure_blocks.py", "tests/test_http_auth.py", "tests/test_web.py",
+            "tests/web_client.test.cjs",
+            "dreamseed_mcp/terrain_data.py", "dreamseed_mcp/terrain_analysis.py", "dreamseed_mcp/terrain_rendering.py", "dreamseed_mcp/terrain_cli.py",
+            "tests/fixtures/java_1_21_3_terrain.json", "tests/test_terrain.py", "docs/terrain.md",
+            "dreamseed_mcp/http_server.py", "dreamseed_mcp/http_auth.py", "dreamseed_mcp/web_server.py",
+            "dreamseed_mcp/web/index.html", "dreamseed_mcp/web/app.js", "dreamseed_mcp/web/style.css", "docs/http_and_web.md",
+            "engine/src/placement.metal", "engine/src/placement_metal.mm", "engine/src/placement_stub.cpp", "engine/src/metal_source.hpp.in",
+            "engine/include/dreamseed/placement.hpp", "tests/test_placement_prefilter.py", "scripts/benchmark_placement.py", "docs/gpu_filtering.md",
+            "tests/fixtures/java_1_21_1_candidate_verification.json", "docs/candidate_verification.md", "docs/roadmap.md",
         }
         source = extract_archive(source_archive, temporary / "source", required)
         check_wheel(wheel)

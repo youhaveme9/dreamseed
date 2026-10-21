@@ -1,0 +1,13 @@
+{
+  "minecraft_version": "1.21.1",
+  "seed": "0",
+  "reference_point": {"x": 0, "y": 64, "z": 0},
+  "structures": [
+    "village", "desert_pyramid", "jungle_temple", "swamp_hut", "igloo",
+    "ocean_ruin", "shipwreck", "ocean_monument", "woodland_mansion", "pillager_outpost"
+  ],
+  "probe_surfaces": false,
+  "confirm_structure_starts": true,
+  "include_biome_map": false,
+  "max_seconds": 300
+}

@@ -1,0 +1,20 @@
+{
+  "minecraft_version": "1.21.1",
+  "seed": "-7333811035076652275",
+  "reference_point": {"x": 0, "z": 0},
+  "hard_constraints": [
+    {"id": "plains", "type": "biome_at", "biome": "plains", "coordinate": {"x": 0, "z": 0}, "y": 64},
+    {"id": "villages", "type": "structure_within", "structure": "village", "radius": 2000, "count": 2},
+    {"id": "outpost", "type": "structure_within", "structure": "pillager_outpost", "radius": 2000},
+    {"id": "cherry", "type": "biome_within", "biome": "cherry_grove", "radius": 1024, "y": 96, "sample_step": 32},
+    {"id": "pair", "type": "max_distance", "from": "villages", "to": "outpost", "max_distance": 1250},
+    {"id": "cherry_pair", "type": "max_distance", "from": "villages", "to": "cherry", "max_distance": 900}
+  ],
+  "soft_preferences": [
+    {"type": "minimize_distance", "constraint_id": "villages", "weight": 1},
+    {"type": "minimize_distance", "constraint_id": "outpost", "weight": 1},
+    {"type": "minimize_distance", "constraint_id": "cherry", "weight": 1}
+  ],
+  "probe_surfaces": true,
+  "max_seconds": 180
+}

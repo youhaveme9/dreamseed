@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import tarfile
+import tomllib
 import zipfile
 from pathlib import Path, PurePosixPath
 
@@ -45,11 +46,15 @@ def content_fingerprint(path: Path) -> str:
     return hashlib.sha256(json.dumps(entries, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
-def verify_bundle(manifest_path: Path, revision: str) -> dict:
+def verify_bundle(manifest_path: Path, revision: str, expected_versions: list[str] | None = None) -> dict:
+    if expected_versions is None:
+        catalog_path = Path(__file__).resolve().parents[1] / "dreamseed_mcp/minecraft_versions.json"
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        expected_versions = [item["name"] for item in catalog["versions"] if item["enabled"]]
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if manifest.get("git_revision") != revision or manifest.get("working_tree_dirty") is not False:
         raise RuntimeError(f"bundle is not from the intended clean commit: {manifest_path.name}")
-    if manifest.get("project") != "DreamSeed" or manifest.get("minecraft_versions") != ["1.21.1"]:
+    if manifest.get("project") != "DreamSeed" or manifest.get("minecraft_versions") != expected_versions:
         raise RuntimeError("unexpected bundle project or Minecraft version")
     if not re.fullmatch(r"[a-z0-9_]+-[a-z0-9_]+", manifest.get("target", "")):
         raise RuntimeError("invalid bundle platform")
@@ -60,7 +65,7 @@ def verify_bundle(manifest_path: Path, revision: str) -> dict:
     if not all(validation.get(key) is True for key in ("source_rebuilt", "native_archive_search", "isolated_wheel_install")):
         raise RuntimeError("bundle is missing required installation validation")
     mcp = validation.get("mcp", {})
-    if mcp.get("ok") is not True or mcp.get("tools_tested") != 9 or mcp.get("job_recovery") is not True:
+    if mcp.get("ok") is not True or mcp.get("tools_tested") != 11 or mcp.get("job_recovery") is not True:
         raise RuntimeError("bundle is missing complete MCP validation")
     names = set()
     for artifact in manifest["artifacts"]:
@@ -88,14 +93,17 @@ def main() -> None:
     parser.add_argument("--commit")
     arguments = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
+    catalog = json.loads((root / "dreamseed_mcp/minecraft_versions.json").read_text(encoding="utf-8"))
+    minecraft_versions = [item["name"] for item in catalog["versions"] if item["enabled"]]
+    expected_version = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
     revision = arguments.commit or subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
     paths = sorted(arguments.input.resolve().rglob("release-manifest-*.json"))
     if not paths:
         parser.error("no platform manifests found")
-    bundles = [(path, verify_bundle(path, revision)) for path in paths]
+    bundles = [(path, verify_bundle(path, revision, minecraft_versions)) for path in paths]
     versions = {manifest["version"] for _, manifest in bundles}
     targets = [manifest["target"] for _, manifest in bundles]
-    if len(versions) != 1 or len(targets) != len(set(targets)):
+    if versions != {expected_version} or len(targets) != len(set(targets)):
         parser.error("platform bundles have different versions or duplicate targets")
     if not any(target.startswith("linux-") for target in targets) or not any(target.startswith("macos-") for target in targets):
         parser.error("both Linux and macOS validated bundles are required")
@@ -127,7 +135,7 @@ def main() -> None:
     artifacts = [{"name": path.name, "sha256": digest(path), "size_bytes": path.stat().st_size} for path in sorted(output.iterdir())]
     manifest = {
         "schema_version": 1, "project": "DreamSeed", "version": version,
-        "git_revision": revision, "working_tree_dirty": False, "minecraft_versions": ["1.21.1"],
+        "git_revision": revision, "working_tree_dirty": False, "minecraft_versions": minecraft_versions,
         "package_content_fingerprints": fingerprints, "platforms": platforms, "artifacts": artifacts,
     }
     (output / "release-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

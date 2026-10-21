@@ -1,0 +1,21 @@
+{
+  "minecraft_version": "1.21.3",
+  "data_version": 4082,
+  "seed": "0",
+  "source": "official_minecraft_java_server",
+  "server_sha1": "45810d238246d90e811d896f87b14695b7fb6839",
+  "reference_point": {"x": 0, "y": 64, "z": 0},
+  "recorded_on": "2026-10-21",
+  "structures": [
+    {"name": "village", "x": 272, "z": 944, "structure_id": "minecraft:village_plains", "piece_count": 105},
+    {"name": "desert_pyramid", "x": 0, "z": -3008, "structure_id": "minecraft:desert_pyramid", "piece_count": 1},
+    {"name": "jungle_temple", "x": 128, "z": 1104, "structure_id": "minecraft:jungle_pyramid", "piece_count": 1},
+    {"name": "swamp_hut", "x": -1824, "z": 304, "structure_id": "minecraft:swamp_hut", "piece_count": 1},
+    {"name": "igloo", "x": 1568, "z": 3072, "structure_id": "minecraft:igloo", "piece_count": 6},
+    {"name": "ocean_ruin", "x": 448, "z": 336, "structure_id": "minecraft:ocean_ruin_warm", "piece_count": 8},
+    {"name": "shipwreck", "x": 224, "z": 128, "structure_id": "minecraft:shipwreck_beached", "piece_count": 1},
+    {"name": "ocean_monument", "x": 1376, "z": -192, "structure_id": "minecraft:monument", "piece_count": 1},
+    {"name": "woodland_mansion", "x": -3536, "z": -832, "structure_id": "minecraft:mansion", "piece_count": 531},
+    {"name": "pillager_outpost", "x": 576, "z": 1648, "structure_id": "minecraft:pillager_outpost", "piece_count": 11}
+  ]
+}

@@ -34,6 +34,7 @@ public:
     static Json search(const Json& request, SearchControl* control = nullptr);
     static Json inspect(const Json& request);
     static Json compare(const Json& request);
+    static Json filterPlacements(const Json& request, SearchControl* control = nullptr);
     static int64_t parseSeed(const std::string& value);
     static std::string formatSeed(uint64_t value);
 };
