@@ -37,6 +37,7 @@ No changes yet.
 6. Minecraft console buffering is bounded and excessive logging produces an actionable failure instead of unbounded memory growth.
 7. Release bundle merging checks the shared version catalog and preserves both supported versions in the combined manifest.
 8. Test setup installs optional HTTP dependencies so clean environments exercise the authenticated transport.
+9. Native version lookups compile cleanly under GCC warnings as errors on Linux.
 
 ### Documentation
 

@@ -576,7 +576,7 @@ uint64_t structure48Seed(uint64_t base, uint64_t index, uint64_t batch_size) {
 
 Json evaluateSeed(const Json& request, uint64_t seed, const std::atomic_bool* cancelled,
                   std::chrono::steady_clock::time_point deadline, PlacementCache* cache = nullptr) {
-    const auto& version = versionSpec(request["minecraft_version"].get<std::string>());
+    const VersionSpec version = versionSpec(request["minecraft_version"].get<std::string>());
     PlacementCache local;
     PlacementCache& placement = cache ? *cache : local;
     const uint64_t lower = seed & ((1ULL << 48) - 1);
@@ -928,7 +928,7 @@ Json Engine::filterPlacements(const Json& input, SearchControl* supplied_control
     }
     std::vector<PlacementRegion> regions;
     std::vector<PlacementRule> rules;
-    const auto& version = versionSpec(request["minecraft_version"]);
+    const VersionSpec version = versionSpec(request["minecraft_version"]);
     for (const auto& constraint : request["hard_constraints"]) {
         if (constraint["type"] != "structure_within") throw EngineError("unsupported_condition", "/hard_constraints", "placement filtering accepts structure constraints only");
         const int type = structureId(constraint["structure"]);
@@ -1101,7 +1101,7 @@ Json Engine::search(const Json& raw_request, SearchControl* supplied_control) {
 
 Json Engine::inspect(const Json& raw_request) {
     const Json request = normalizeInspect(raw_request);
-    const auto& version = versionSpec(request["minecraft_version"].get<std::string>());
+    const VersionSpec version = versionSpec(request["minecraft_version"].get<std::string>());
     const uint64_t seed = static_cast<uint64_t>(parseSeed(request["seed"]));
     Generator generator{};
     setupGenerator(&generator, version.cubiomes_id, 0);
